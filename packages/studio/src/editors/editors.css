@@ -494,3 +494,80 @@ select option {
 .sim-field.grow {
   flex: 1;
 }
+
+/* state action groups */
+.agroup {
+  border-top: 1px solid var(--border);
+  padding: 4px 0;
+}
+.agroup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.agroup-head .collapse-head .count {
+  margin-left: 6px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.agroup-hint {
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.add-menu {
+  position: relative;
+}
+.add-menu-list {
+  position: absolute;
+  top: 22px;
+  right: 0;
+  z-index: 20;
+  min-width: 340px;
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 4px 18px;
+}
+.actions-empty {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.action {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.action-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--row-h);
+}
+.grip {
+  display: inline-flex;
+  align-items: center;
+  width: 20px;
+  justify-content: center;
+  color: var(--text-3);
+  cursor: grab;
+  touch-action: none;
+}
+.action-text {
+  flex: 1;
+  text-align: left;
+  font-size: var(--fs-sm);
+  padding: 2px 4px;
+}
+.action-text:hover {
+  color: var(--focus);
+}
+.action-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 8px 28px;
+  border-top: 1px solid var(--border);
+}

@@ -234,3 +234,72 @@ test('Conditions: IF row from boxes, NOT, brackets, compare, summary, alarm', as
   await expect(again.getByTestId('alarm-message')).toHaveValue('Pusher is out of position');
   await page.screenshot({ path: `${SHOTS}/conditions.png` });
 });
+
+test('States: three action groups, action menu, text forms, drag to reorder', async ({ page }) => {
+  await newProject(page);
+  await seedLibrary(page);
+  await openFromTree(page, 'States');
+  await page.getByTestId('editor-new').click();
+  await page.getByTestId('dialog-input').fill('Push');
+  await page.getByTestId('dialog-ok').click();
+  const card = page.getByTestId('state-card-Push');
+
+  // Roles: a device "Pusher" and a timer "SealTimer".
+  await card.getByTestId('add-role').click();
+  await card.getByTestId('role-name').fill('Pusher');
+  await card.getByTestId('add-role').click();
+  await card.getByTestId('role-name').nth(1).fill('SealTimer');
+  await card.getByTestId('role-kind').nth(1).selectOption('timer');
+
+  const entry = card.getByTestId('group-onEntry');
+  // Logic blocks and queues are listed but not available before Phase 6.
+  await entry.getByTestId('add-action').click();
+  await expect(entry.getByTestId('add-logic')).toBeDisabled();
+  await expect(entry.getByTestId('add-queue')).toBeDisabled();
+
+  await entry.getByTestId('add-equipment').click();
+  await expect(entry.getByTestId('action-text').first()).toHaveText(
+    'Pusher.ICylinder.SetExtend(false)',
+  );
+  await entry.getByTestId('action-value').selectOption('true');
+  await expect(entry.getByTestId('action-text').first()).toHaveText(
+    'Pusher.ICylinder.SetExtend(true)',
+  );
+
+  await entry.getByTestId('add-action').click();
+  await entry.getByTestId('add-timer').click();
+  await expect(entry.getByTestId('action-text').nth(1)).toHaveText("Timer.Start('SealTimer')");
+
+  await entry.getByTestId('add-action').click();
+  await entry.getByTestId('add-global').click();
+  await expect(entry.getByTestId('action-text').nth(2)).toHaveText('Global.SetStop(false)');
+
+  // Drag the third action (the global) above the first.
+  const grip = entry.getByTestId('action-grip').nth(2);
+  const target = entry.getByTestId('action-row').first();
+  const g = (await grip.boundingBox())!;
+  const t = (await target.boundingBox())!;
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(g.x + 2, t.y + 4, { steps: 8 });
+  await page.mouse.up();
+  await expect(entry.getByTestId('action-text').first()).toHaveText('Global.SetStop(false)');
+
+  // Steps and On Exit take actions too.
+  const steps = card.getByTestId('group-steps');
+  await steps.getByTestId('add-action').click();
+  await steps.getByTestId('add-equipment').click();
+  await expect(steps.getByTestId('action-text')).toHaveCount(1);
+
+  await page.keyboard.press('Control+s');
+  await expect(page.getByTestId('status-saved')).toContainText('No unsaved');
+  await page.reload();
+  await openFromTree(page, 'States');
+  const again = page.getByTestId('state-card-Push');
+  await expect(again.getByTestId('group-onEntry').getByTestId('action-text')).toHaveText([
+    'Global.SetStop(false)',
+    'Pusher.ICylinder.SetExtend(true)',
+    "Timer.Start('SealTimer')",
+  ]);
+  await page.screenshot({ path: `${SHOTS}/states.png` });
+});
