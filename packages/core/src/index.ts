@@ -50,3 +50,4 @@ export * from './driver';
 export * from './compile';
 export * from './engine';
 export * from './catalog';
+export * from './validate';
