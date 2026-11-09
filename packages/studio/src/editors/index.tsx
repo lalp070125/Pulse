@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { EquipmentEditor } from './EquipmentEditor';
 import { GlobalsEditor } from './GlobalsEditor';
 import { InterfacesEditor } from './InterfacesEditor';
 
@@ -9,6 +10,8 @@ export function editorForTab(tabId: string): ReactNode | null {
       return <GlobalsEditor />;
     case 'doc:lib.interfaces':
       return <InterfacesEditor />;
+    case 'doc:lib.equipment':
+      return <EquipmentEditor />;
     default:
       return null;
   }

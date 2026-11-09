@@ -99,3 +99,46 @@ test('Interfaces: card with typed, directed signals', async ({ page }) => {
   );
   await page.screenshot({ path: `${SHOTS}/interfaces.png` });
 });
+
+test('Equipment: made of interfaces, with a simulated behaviour', async ({ page }) => {
+  await newProject(page);
+  // Two interfaces first.
+  await openFromTree(page, 'Interfaces');
+  for (const [name, signals] of [
+    ['IMotor', ['Run', 'Running']],
+    ['IFault', ['Fault']],
+  ] as const) {
+    await page.getByTestId('editor-new').click();
+    await page.getByTestId('dialog-input').fill(name);
+    await page.getByTestId('dialog-ok').click();
+    const card = page.getByTestId(`interface-card-${name}`);
+    for (let i = 0; i < signals.length; i++) {
+      await card.getByTestId('add-signal').click();
+      await card.getByTestId('signal-name').nth(i).fill(signals[i]!);
+    }
+  }
+
+  await openFromTree(page, 'Equipment');
+  await page.getByTestId('editor-new').click();
+  await page.getByTestId('dialog-input').fill('Motor');
+  await page.getByTestId('dialog-ok').click();
+  const card = page.getByTestId('equipment-card-Motor');
+  await card.getByTestId('add-interface').selectOption({ label: 'IMotor' });
+  await card.getByTestId('add-interface').selectOption({ label: 'IFault' });
+  await expect(card.getByTestId('interface-chip')).toHaveCount(2);
+
+  await card.getByTestId('sim-kind').selectOption('follow');
+  await card.getByTestId('sim-delay').fill('100');
+  await card.getByTestId('sim-command').selectOption({ label: 'IMotor.Run' });
+  await card.getByTestId('sim-feedback').selectOption({ label: 'IMotor.Running' });
+
+  await page.keyboard.press('Control+s');
+  await expect(page.getByTestId('status-saved')).toContainText('No unsaved');
+  await page.reload();
+  await openFromTree(page, 'Equipment');
+  const again = page.getByTestId('equipment-card-Motor');
+  await expect(again.getByTestId('interface-chip')).toHaveCount(2);
+  await expect(again.getByTestId('sim-delay')).toHaveValue('100');
+  await expect(again.getByTestId('sim-feedback')).toHaveValue(/.+\/.+/);
+  await page.screenshot({ path: `${SHOTS}/equipment.png` });
+});

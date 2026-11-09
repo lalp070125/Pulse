@@ -227,3 +227,65 @@ select {
 select option {
   background: var(--bg-2);
 }
+
+/* chips and sub-sections inside cards */
+.sub-label {
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 4px 0 8px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+}
+.chip button {
+  display: inline-flex;
+  color: var(--text-2);
+}
+.chip button:hover {
+  color: var(--err);
+}
+.chip-bad {
+  border-color: var(--err);
+}
+.sim {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.sim-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sim-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 8px;
+}
+.sim-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.sim-field .input {
+  color: var(--text-1);
+}
