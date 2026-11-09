@@ -1,4 +1,5 @@
-import type { AppId } from '@pulso/core';
+import type { AppId, Project } from '@pulso/core';
+import { KINDS, listOf, type EntityKind } from '../state/entities';
 import type { StudioMode } from '../state/store';
 
 /**
@@ -44,6 +45,8 @@ export interface TreeNode {
   /** Phase in which the editor behind this node is built. */
   phase?: number;
   startOpen?: boolean;
+  /** Set on nodes that stand for one entity, or (with no id) for a whole kind. */
+  entity?: { kind: EntityKind; id?: string };
 }
 
 const PLAN: TreeNode[] = [
@@ -133,11 +136,46 @@ const TWIN: TreeNode[] = [
   },
 ];
 
-export function treeFor(app: AppId, mode: StudioMode): TreeNode[] {
+const KIND_OF_NODE: Record<string, EntityKind> = {
+  'lib.globals': 'global',
+  'lib.interfaces': 'interface',
+  'lib.equipment': 'equipment',
+  'lib.conditions': 'condition',
+  'lib.states': 'state',
+  machines: 'machine',
+};
+
+/** The Plan tree with the real entities of the open project filled in. */
+function planTree(project: Project | null): TreeNode[] {
+  const fill = (node: TreeNode): TreeNode => {
+    const kind = KIND_OF_NODE[node.id];
+    const children = node.children?.map(fill);
+    if (!kind) return children ? { ...node, children } : node;
+    const items = project ? listOf(project, kind) : [];
+    return {
+      ...node,
+      entity: { kind },
+      phase: undefined,
+      hint: node.hint,
+      label: node.label,
+      children: items.map((e) => ({
+        id: `${kind}:${e.id}`,
+        label: e.name,
+        icon: node.icon,
+        entity: { kind, id: e.id },
+      })),
+    };
+  };
+  return PLAN.map(fill);
+}
+
+export function treeFor(app: AppId, mode: StudioMode, project: Project | null = null): TreeNode[] {
   if (app === 'panel') return PANEL;
   if (app === 'twin') return TWIN;
-  return mode === 'plan' ? PLAN : mode === 'monitor' ? MONITOR : TEST;
+  return mode === 'plan' ? planTree(project) : mode === 'monitor' ? MONITOR : TEST;
 }
+
+export { KINDS };
 
 export function sidebarTitle(app: AppId): string | null {
   if (app === 'panel') return 'PROJECT';

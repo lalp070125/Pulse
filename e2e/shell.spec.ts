@@ -69,7 +69,7 @@ test.describe('desktop 1440 × 900', () => {
     ]) {
       await expect(tree.getByText(label, { exact: true })).toBeVisible();
     }
-    await expect(tree).toContainText('127.0.0.1:4600');
+    await expect(tree).toContainText(/127\.0\.0\.1:\d+/);
 
     await page.screenshot({ path: `${SHOTS}/studio-plan.png` });
     expect(errors).toEqual([]);

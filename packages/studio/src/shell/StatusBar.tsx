@@ -1,3 +1,4 @@
+import { useDirty } from '../state/project';
 import { useShell } from '../state/store';
 
 const TEXT = {
@@ -11,6 +12,7 @@ export function StatusBar() {
   const connection = useShell((s) => s.connection);
   const address = useShell((s) => s.runtimeAddress);
   const app = useShell((s) => s.app);
+  const dirty = useDirty();
 
   return (
     <footer className="statusbar" data-testid="statusbar">
@@ -21,7 +23,9 @@ export function StatusBar() {
       </span>
       <span className="status-right">
         {app === 'panel' && <span>Runtime target: Web</span>}
-        <span title="Unsaved changes">No unsaved changes</span>
+        <span title="Unsaved changes" data-testid="status-saved" className={dirty ? 'unsaved' : ''}>
+          {dirty ? 'Unsaved changes' : 'No unsaved changes'}
+        </span>
         <span title="Cycle time of the selected machine">Cycle: —</span>
         <span title="Ticks executed by the runtime">Tick: —</span>
       </span>

@@ -4,7 +4,11 @@ import { startServer } from './server';
 const production = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? DEFAULT_PORT);
 
-startServer({ port, ui: production ? 'static' : 'dev' })
+startServer({
+  port,
+  ui: production ? 'static' : 'dev',
+  projectsDir: process.env.PULSO_PROJECTS_DIR,
+})
   .then((server) => {
     console.log(`${PRODUCT_NAME} is running on http://localhost:${server.port}`);
     console.log(production ? '(production: serving built UI)' : '(development: live reload on)');

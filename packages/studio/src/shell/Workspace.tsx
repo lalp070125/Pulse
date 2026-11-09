@@ -13,6 +13,7 @@ import { Inspector } from './Inspector';
 import { MessagesPanel } from './MessagesPanel';
 import { Sidebar } from './Sidebar';
 import { Tabs } from './Tabs';
+import { editorForTab } from '../editors';
 
 // Shell sizes in px (SPEC 4.3). The panel library works in percent, so the
 // starting sizes are converted once from the real window size.
@@ -28,9 +29,12 @@ function percent(px: number, of: number): number {
 function Document() {
   const set = useShell((s) => s.tabsByApp[s.app]);
   const active = set.tabs.find((t) => t.id === set.activeId);
+  const editor = active ? editorForTab(active.id) : null;
   return (
     <div className="document" data-testid="document">
-      {active ? (
+      {editor ? (
+        editor
+      ) : active ? (
         <div className="doc-placeholder">
           <div className="doc-title">{active.title}</div>
           <div className="doc-note">{active.note}</div>

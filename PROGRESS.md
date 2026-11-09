@@ -3,15 +3,16 @@
 Branch: `phase-2-library-editors`
 
 ## Done
-- (nothing committed yet)
+
+- Foundation: runtime project API (open/create/save, schema-checked), Studio working copy of the project, live project tree, New/Rename/Duplicate/Delete/Find-usages, dialogs, Save (Ctrl+S), unsaved indicator, File > New/Open project
+- Global Variables editor (all types incl. nested array/map/record) + browser test `e2e/library.spec.ts`
 
 ## Next
-1. Foundation: project API in the runtime, project store and live tree in the Studio
-2. Global Variables editor
-3. Interfaces editor
-4. Equipment editor
-5. Conditions editor (with variable picker)
-6. States editor (with action menus)
-7. Machines composer (instances, timers, bindings)
-8. Validator (messages panel, click-to-go)
-9. Acceptance check and report
+
+1. Interfaces editor
+2. Equipment editor
+3. Conditions editor (with variable picker)
+4. States editor (with action menus)
+5. Machines composer (instances, timers, bindings)
+6. Validator (messages panel, click-to-go)
+7. Acceptance check and report
