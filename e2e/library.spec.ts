@@ -66,3 +66,36 @@ test('Global Variables: add, edit, type, save, reload', async ({ page }) => {
   await expect(again.getByTestId('global-description')).toHaveValue('Boxes sealed');
   await expect(page.getByTestId('global-row-Slots')).toBeVisible();
 });
+
+test('Interfaces: card with typed, directed signals', async ({ page }) => {
+  await newProject(page);
+  await openFromTree(page, 'Interfaces');
+  await page.getByTestId('editor-new').click();
+  await page.getByTestId('dialog-input').fill('IMotor');
+  await page.getByTestId('dialog-ok').click();
+  const card = page.getByTestId('interface-card-IMotor');
+  await expect(card).toBeVisible();
+
+  await card.getByTestId('add-signal').click();
+  await card.getByTestId('signal-name').fill('Run');
+  await card.getByTestId('signal-direction').selectOption('command');
+  await card.getByTestId('add-signal').click();
+  await card.getByTestId('signal-name').nth(1).fill('Running');
+  await expect(card.getByTestId('signal-row-Run')).toBeVisible();
+  await expect(card.getByTestId('signal-row-Running').getByTestId('signal-direction')).toHaveValue(
+    'feedback',
+  );
+
+  // Two signals may not share a name: the second edit is refused.
+  await card.getByTestId('signal-name').nth(1).fill('Run');
+  await expect(card.getByTestId('signal-name').nth(1)).toHaveAttribute('aria-invalid', 'true');
+
+  await page.keyboard.press('Control+s');
+  await expect(page.getByTestId('status-saved')).toContainText('No unsaved');
+  await page.reload();
+  await openFromTree(page, 'Interfaces');
+  await expect(page.getByTestId('signal-row-Run').getByTestId('signal-direction')).toHaveValue(
+    'command',
+  );
+  await page.screenshot({ path: `${SHOTS}/interfaces.png` });
+});

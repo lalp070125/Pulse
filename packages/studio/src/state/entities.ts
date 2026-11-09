@@ -300,3 +300,26 @@ export async function askDelete(kind: EntityKind, id: string): Promise<boolean> 
   });
   return true;
 }
+
+/** Deletes something inside an entity (a signal, a role, an instance…) after listing what depends on it. */
+export async function askDeleteInner(
+  what: string,
+  id: string,
+  remove: () => void,
+): Promise<boolean> {
+  const p = useProject.getState().project;
+  if (!p) return false;
+  const lines = usageLines(p, id);
+  if (lines.length === 0) {
+    remove();
+    return true;
+  }
+  const ok = await askConfirm(
+    `Delete ${what}?`,
+    ['These depend on it and will show errors until fixed:', ...lines.map((l) => `• ${l}`)],
+    'Delete',
+    true,
+  );
+  if (ok) remove();
+  return ok;
+}
