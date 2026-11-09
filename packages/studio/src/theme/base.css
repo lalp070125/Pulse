@@ -1,0 +1,56 @@
+/* Base element styles. Colours and sizes come only from tokens.css. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--bg-0);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  min-width: var(--min-app-width);
+}
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  color: var(--text-3);
+}
+:focus-visible {
+  outline: 1px solid var(--focus);
+  outline-offset: -1px;
+}
+.mono {
+  font-family: var(--font-mono);
+}
+.input {
+  height: 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 6px;
+  font-size: var(--fs-sm);
+}
+.input:focus {
+  border-color: var(--focus);
+  outline: none;
+}
