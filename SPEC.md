@@ -659,6 +659,7 @@ Section 11: MCP server first, then the Describe panel.
 
 **Phase 10 — Hardening**
 Playwright smoke tests for every screen, docs pages, performance pass (100 states, 50 signals at 10 ms without dropped frames in Monitor), export/import project as zip.
+*Note (added after Phase 0)*: bundle the Inter and JetBrains Mono fonts locally instead of loading them from Google Fonts, so the app looks the same offline.
 
 ---
 
