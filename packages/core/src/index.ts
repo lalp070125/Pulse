@@ -1,9 +1,7 @@
 /**
  * @pulso/core — the engine.
  *
- * This package must stay pure TypeScript: no Node APIs, no browser APIs,
- * no clock, no randomness (SPEC 5.8). Phase 0 only holds product identity
- * and the shared API shapes; the engine itself arrives in Phase 1.
+ * Pure TypeScript: no Node APIs, no browser APIs, no clock, no randomness (SPEC 5.8).
  */
 
 /** The one place the product name lives. Rename here (and replace the logo file) to rebrand. */
@@ -34,7 +32,7 @@ export interface HealthInfo {
   version: string;
   /** Address the runtime listens on, e.g. "127.0.0.1:4600". */
   address: string;
-  /** Name of the open project, or null when none is loaded (always null in Phase 0). */
+  /** Name of the open project, or null when none is loaded. */
   project: string | null;
 }
 
@@ -43,3 +41,11 @@ export type ServerMessage = { type: 'hello'; product: string; version: string } 
 
 /** Messages the UI sends over the live WebSocket (/ws). */
 export type ClientMessage = { type: 'ping' };
+
+export * from './types';
+export * from './schema';
+export * from './files';
+export * from './trace';
+export * from './driver';
+export * from './compile';
+export * from './engine';

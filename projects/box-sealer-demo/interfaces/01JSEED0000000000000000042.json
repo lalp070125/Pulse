@@ -1,0 +1,34 @@
+{
+  "id": "01JSEED0000000000000000042",
+  "name": "ICylinder",
+  "description": "A pneumatic cylinder with end-position sensors.",
+  "signals": [
+    {
+      "id": "01JSEED0000000000000000043",
+      "name": "Extend",
+      "type": {
+        "kind": "bool"
+      },
+      "direction": "command",
+      "description": "Push out (false = pull back)"
+    },
+    {
+      "id": "01JSEED0000000000000000044",
+      "name": "Extended",
+      "type": {
+        "kind": "bool"
+      },
+      "direction": "feedback",
+      "description": "Fully out"
+    },
+    {
+      "id": "01JSEED0000000000000000045",
+      "name": "Retracted",
+      "type": {
+        "kind": "bool"
+      },
+      "direction": "feedback",
+      "description": "Fully back"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "01JSEED000000000000000003E",
+  "name": "IFault",
+  "description": "A device that can report its own fault.",
+  "signals": [
+    {
+      "id": "01JSEED000000000000000003F",
+      "name": "Fault",
+      "type": {
+        "kind": "bool"
+      },
+      "direction": "feedback"
+    }
+  ]
+}

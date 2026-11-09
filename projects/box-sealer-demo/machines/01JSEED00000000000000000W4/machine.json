@@ -1,0 +1,311 @@
+{
+  "id": "01JSEED00000000000000000W4",
+  "name": "Sealer",
+  "description": "Feeds a box to the stop, pushes it under the seal head, seals it, releases it.",
+  "cycleMs": 10,
+  "instances": [
+    {
+      "id": "01JSEED00000000000000000S0",
+      "name": "Conveyor",
+      "equipment": "01JSEED0000000000000000068"
+    },
+    {
+      "id": "01JSEED00000000000000000S1",
+      "name": "BoxAtStop",
+      "equipment": "01JSEED000000000000000006J"
+    },
+    {
+      "id": "01JSEED00000000000000000S2",
+      "name": "Pusher",
+      "equipment": "01JSEED000000000000000006W"
+    },
+    {
+      "id": "01JSEED00000000000000000S3",
+      "name": "SealHead",
+      "equipment": "01JSEED000000000000000006W"
+    },
+    {
+      "id": "01JSEED00000000000000000S4",
+      "name": "Lamp",
+      "equipment": "01JSEED0000000000000000076"
+    }
+  ],
+  "timers": [
+    {
+      "id": "01JSEED00000000000000000SA",
+      "name": "SealTime",
+      "presetMs": 1500
+    },
+    {
+      "id": "01JSEED00000000000000000SB",
+      "name": "PusherWatch",
+      "presetMs": 2000
+    }
+  ],
+  "states": [
+    {
+      "id": "01JSEED00000000000000000SM",
+      "name": "Idle",
+      "template": "01JSEED00000000000000000JR",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CG",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S0"
+        },
+        {
+          "role": "01JSEED00000000000000000CH",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S4"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000SN",
+      "name": "Feed",
+      "template": "01JSEED00000000000000000K2",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CG",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S0"
+        },
+        {
+          "role": "01JSEED00000000000000000CH",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S4"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000SP",
+      "name": "Push",
+      "template": "01JSEED00000000000000000KC",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CG",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S0"
+        },
+        {
+          "role": "01JSEED00000000000000000CJ",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S2"
+        },
+        {
+          "role": "01JSEED00000000000000000CP",
+          "kind": "timer",
+          "timer": "01JSEED00000000000000000SB"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000SQ",
+      "name": "Seal",
+      "template": "01JSEED00000000000000000KP",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CK",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S3"
+        },
+        {
+          "role": "01JSEED00000000000000000CQ",
+          "kind": "timer",
+          "timer": "01JSEED00000000000000000SA"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000SR",
+      "name": "Release",
+      "template": "01JSEED00000000000000000M0",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CJ",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S2"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000SS",
+      "name": "Faulted",
+      "template": "01JSEED00000000000000000MA",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CG",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S0"
+        },
+        {
+          "role": "01JSEED00000000000000000CJ",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S2"
+        },
+        {
+          "role": "01JSEED00000000000000000CK",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S3"
+        },
+        {
+          "role": "01JSEED00000000000000000CH",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S4"
+        }
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "id": "01JSEED00000000000000000SY",
+      "template": "01JSEED00000000000000000NW",
+      "bindings": []
+    },
+    {
+      "id": "01JSEED00000000000000000SZ",
+      "template": "01JSEED00000000000000000NX",
+      "bindings": []
+    },
+    {
+      "id": "01JSEED00000000000000000T0",
+      "template": "01JSEED00000000000000000NY",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CM",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S1"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000T1",
+      "template": "01JSEED00000000000000000NZ",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CN",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S2"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000T2",
+      "template": "01JSEED00000000000000000P0",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CR",
+          "kind": "timer",
+          "timer": "01JSEED00000000000000000SA"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000T3",
+      "template": "01JSEED00000000000000000P1",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CN",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S2"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000T4",
+      "template": "01JSEED00000000000000000P2",
+      "bindings": [
+        {
+          "role": "01JSEED00000000000000000CN",
+          "kind": "instance",
+          "instance": "01JSEED00000000000000000S2"
+        },
+        {
+          "role": "01JSEED00000000000000000CP",
+          "kind": "timer",
+          "timer": "01JSEED00000000000000000SB"
+        }
+      ]
+    },
+    {
+      "id": "01JSEED00000000000000000T5",
+      "template": "01JSEED00000000000000000P3",
+      "bindings": []
+    }
+  ],
+  "initial": "01JSEED00000000000000000SM",
+  "transitions": [
+    {
+      "id": "01JSEED00000000000000000TJ",
+      "from": "01JSEED00000000000000000SM",
+      "to": "01JSEED00000000000000000SN",
+      "condition": "01JSEED00000000000000000SY",
+      "priority": 1
+    },
+    {
+      "id": "01JSEED00000000000000000TK",
+      "from": "01JSEED00000000000000000SN",
+      "to": "01JSEED00000000000000000SP",
+      "condition": "01JSEED00000000000000000T0",
+      "priority": 1
+    },
+    {
+      "id": "01JSEED00000000000000000TM",
+      "from": "01JSEED00000000000000000SP",
+      "to": "01JSEED00000000000000000SQ",
+      "condition": "01JSEED00000000000000000T1",
+      "priority": 1
+    },
+    {
+      "id": "01JSEED00000000000000000TN",
+      "from": "01JSEED00000000000000000SQ",
+      "to": "01JSEED00000000000000000SR",
+      "condition": "01JSEED00000000000000000T2",
+      "priority": 1
+    },
+    {
+      "id": "01JSEED00000000000000000TP",
+      "from": "01JSEED00000000000000000SR",
+      "to": "01JSEED00000000000000000SN",
+      "condition": "01JSEED00000000000000000T3",
+      "priority": 1
+    },
+    {
+      "id": "01JSEED00000000000000000TQ",
+      "from": "01JSEED00000000000000000SS",
+      "to": "01JSEED00000000000000000SM",
+      "condition": "01JSEED00000000000000000T5",
+      "priority": 1
+    }
+  ],
+  "aborts": [
+    {
+      "id": "01JSEED00000000000000000TW",
+      "condition": "01JSEED00000000000000000T4",
+      "to": "01JSEED00000000000000000SS"
+    }
+  ],
+  "interrupts": [
+    {
+      "id": "01JSEED00000000000000000V6",
+      "trigger": "01JSEED00000000000000000SZ",
+      "resume": "01JSEED00000000000000000SY",
+      "onHold": [
+        {
+          "id": "01JSEED00000000000000000V7",
+          "kind": "equipment",
+          "target": {
+            "kind": "signal",
+            "instance": "01JSEED00000000000000000S0",
+            "interface": "01JSEED0000000000000000034",
+            "signal": "01JSEED0000000000000000035"
+          },
+          "value": {
+            "from": "literal",
+            "value": false
+          }
+        }
+      ]
+    }
+  ]
+}

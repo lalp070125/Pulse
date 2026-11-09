@@ -1,0 +1,56 @@
+{
+  "id": "01JSEED00000000000000000P2",
+  "name": "PusherStuck",
+  "description": "Extend was commanded but the cylinder did not report Extended before the watchdog ran out.",
+  "roles": [
+    {
+      "id": "01JSEED00000000000000000CN",
+      "name": "Cylinder",
+      "kind": "equipment",
+      "equipment": "01JSEED000000000000000006W"
+    },
+    {
+      "id": "01JSEED00000000000000000CP",
+      "name": "Watchdog",
+      "kind": "timer"
+    }
+  ],
+  "expr": {
+    "op": "and",
+    "args": [
+      {
+        "op": "var",
+        "ref": {
+          "kind": "roleSignal",
+          "role": "01JSEED00000000000000000CN",
+          "interface": "01JSEED0000000000000000042",
+          "signal": "01JSEED0000000000000000043"
+        }
+      },
+      {
+        "op": "not",
+        "arg": {
+          "op": "var",
+          "ref": {
+            "kind": "roleSignal",
+            "role": "01JSEED00000000000000000CN",
+            "interface": "01JSEED0000000000000000042",
+            "signal": "01JSEED0000000000000000044"
+          }
+        }
+      },
+      {
+        "op": "timerDone",
+        "timer": {
+          "kind": "roleTimer",
+          "role": "01JSEED00000000000000000CP"
+        }
+      }
+    ]
+  },
+  "alarm": {
+    "group": "Sealer",
+    "severity": "alarm",
+    "message": "Pusher did not extend within 2 s"
+  }
+}

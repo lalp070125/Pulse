@@ -1,0 +1,9 @@
+{
+  "id": "01JSEED000000000000000009E",
+  "name": "Running",
+  "type": {
+    "kind": "bool"
+  },
+  "default": false,
+  "description": "The machine is producing"
+}

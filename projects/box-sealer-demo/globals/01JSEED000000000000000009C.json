@@ -1,0 +1,9 @@
+{
+  "id": "01JSEED000000000000000009C",
+  "name": "Start",
+  "type": {
+    "kind": "bool"
+  },
+  "default": false,
+  "description": "Start button"
+}

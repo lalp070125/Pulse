@@ -1,0 +1,10 @@
+{
+  "id": "01JSEED000000000000000009F",
+  "name": "BoxCount",
+  "type": {
+    "kind": "int"
+  },
+  "default": 0,
+  "unit": "boxes",
+  "description": "Boxes sealed (counting arrives with logic blocks)"
+}

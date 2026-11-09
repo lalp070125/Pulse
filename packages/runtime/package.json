@@ -6,7 +6,8 @@
   "main": "./src/server.ts",
   "scripts": {
     "dev": "tsx src/main.ts",
-    "start": "NODE_ENV=production tsx src/main.ts"
+    "start": "NODE_ENV=production tsx src/main.ts",
+    "seed": "tsx src/seed/writeSeed.ts"
   },
   "dependencies": {
     "@pulso/core": "*",

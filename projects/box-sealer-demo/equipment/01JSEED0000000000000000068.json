@@ -1,0 +1,21 @@
+{
+  "id": "01JSEED0000000000000000068",
+  "name": "Motor",
+  "description": "Motor with fault feedback. Simulated: Running follows Run after 100 ms.",
+  "interfaces": [
+    "01JSEED0000000000000000034",
+    "01JSEED000000000000000003E"
+  ],
+  "simModel": {
+    "kind": "follow",
+    "command": {
+      "interface": "01JSEED0000000000000000034",
+      "signal": "01JSEED0000000000000000035"
+    },
+    "feedback": {
+      "interface": "01JSEED0000000000000000034",
+      "signal": "01JSEED0000000000000000036"
+    },
+    "delayMs": 100
+  }
+}

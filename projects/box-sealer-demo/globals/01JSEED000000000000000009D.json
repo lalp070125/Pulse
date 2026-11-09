@@ -1,0 +1,9 @@
+{
+  "id": "01JSEED000000000000000009D",
+  "name": "Stop",
+  "type": {
+    "kind": "bool"
+  },
+  "default": false,
+  "description": "Stop button"
+}
