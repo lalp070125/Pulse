@@ -678,3 +678,12 @@ Playwright smoke tests for every screen, docs pages, performance pass (100 state
 - Never copy names, logos, text or assets from other products.
 - Never present this software as a safety system (section 13).
 - Work on a branch per phase; merge only after the acceptance checklist passes and the owner confirms.
+
+---
+
+## Later ideas
+
+Not scheduled in any phase yet. Each needs the owner's go-ahead before it is built.
+
+- **Per-instance simulation overrides.** Simulated device behaviour lives on the equipment type (for example "Cylinder: 400 ms travel"). Later, let one instance override it (for example "this Pusher takes 600 ms") without creating a new equipment type.
+- **"Stop timer on state exit" option.** Timers keep running when the machine changes state (approved in Phase 1). Later, add an optional per-timer setting that stops (or resets) the timer automatically when the state that started it is left.
