@@ -249,7 +249,12 @@ function Card({ m, others }: { m: Machine; others: string[] }) {
           />
           ms
         </label>
-        <span className="spacer" />
+        <input
+          className="input wide"
+          value={m.description ?? ''}
+          placeholder="what this machine does"
+          onChange={(e) => edit((x) => (x.description = e.target.value || undefined))}
+        />
         <IconButton title={`Delete ${m.name}`} onClick={() => void askDelete('machine', m.id)} />
       </header>
 

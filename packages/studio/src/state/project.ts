@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { compileProject, type Problem, type Project } from '@pulso/core';
+import { validateProject, type Issue, type Project } from '@pulso/core';
 import { useShell } from './store';
 
 /* ----------------------------------------------------------------------------
@@ -13,7 +13,8 @@ interface ProjectState {
   project: Project | null;
   /** JSON of the last saved version, to know whether anything changed. */
   saved: string;
-  problems: Problem[];
+  /** Live validator problems (SPEC 6.5), recomputed on every change. */
+  problems: Issue[];
   loading: boolean;
   /** Entity the user asked to look at (tree click, message click). Editors scroll to it. */
   focus: { id: string; nonce: number } | null;
@@ -27,8 +28,8 @@ interface ProjectState {
   openProject(name: string): Promise<boolean>;
 }
 
-function check(project: Project | null): Problem[] {
-  return project ? compileProject(project).problems : [];
+function check(project: Project | null): Issue[] {
+  return project ? validateProject(project) : [];
 }
 
 export const useProject = create<ProjectState>((set, get) => ({

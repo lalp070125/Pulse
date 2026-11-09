@@ -136,15 +136,19 @@ test.describe('desktop 1440 × 900', () => {
   test('messages panel: level pills, pause, clear', async ({ page }) => {
     await page.goto('/studio');
     const messages = page.getByTestId('messages');
+    // Log rows only: live validator problems of the open project (if any) are not log entries
+    // and are not removed by Clear; they go away when the problem is fixed.
+    const logRows = messages.locator('.msg-row:not(.problem)');
     await expect(messages).toContainText('Info: 2');
+    await expect(logRows).toHaveCount(2);
     await page.getByRole('button', { name: 'Info: 2' }).click();
-    await expect(messages).toContainText('No messages');
+    await expect(logRows).toHaveCount(0);
     await page.getByRole('button', { name: 'Info: 2' }).click();
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.getByRole('button', { name: /Resume/ })).toBeVisible();
     await page.getByRole('button', { name: /Resume/ }).click();
     await page.getByRole('button', { name: 'Clear' }).click();
-    await expect(messages).toContainText('No messages');
+    await expect(logRows).toHaveCount(0);
   });
 
   test('app switcher moves between Studio, Panel and Twin', async ({ page }) => {

@@ -392,3 +392,49 @@ test('Machines composer: instances, timers, state and condition use, binding tab
   await expect(again.getByTestId('unbound-count')).toHaveText('All roles bound');
   await page.screenshot({ path: `${SHOTS}/machines.png` });
 });
+
+test('Messages panel: live validator problems with click-to-go', async ({ page }) => {
+  await newProject(page);
+  // A condition whose role needs an equipment type that does not exist, written straight into the project.
+  const got = (await (await page.request.get('/api/project')).json()) as { project: Project };
+  const p = got.project;
+  const id = (n: number) => `01JTEST${String(n).padStart(19, '0')}`;
+  p.conditions.push({
+    id: id(50),
+    name: 'Broken',
+    roles: [{ id: id(51), name: 'Gone', kind: 'equipment', equipment: id(99) }],
+    expr: { op: 'lit', value: true },
+  });
+  expect((await page.request.put('/api/project', { data: { project: p } })).ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title-text')).toContainText('lib-');
+
+  const rows = page.getByTestId('problem-row');
+  const broken = rows.filter({ hasText: "Condition 'Broken'" });
+  await expect(broken).toHaveCount(1);
+  await expect(broken).toContainText("role 'Gone' needs an equipment type that no longer exists");
+  await expect(page.getByTestId('messages')).toContainText('Errors: 1');
+
+  // Click-to-go: opens the Conditions editor and lights the card.
+  await openFromTree(page, 'Global Variables');
+  await broken.click();
+  await expect(page.getByTestId('editor-conditions')).toBeVisible();
+  await expect(page.getByTestId('condition-card-Broken')).toHaveClass(/card-lit/);
+
+  // A new machine has no Init yet: a second, live problem that points at the machine.
+  await openFromTree(page, 'Machines');
+  await page.getByTestId('editor-new').click();
+  await page.getByTestId('dialog-input').fill('Line');
+  await page.getByTestId('dialog-ok').click();
+  await expect(rows.filter({ hasText: "Machine 'Line'" })).toHaveCount(1);
+  await page.screenshot({ path: `${SHOTS}/messages-problems.png` });
+
+  // Fixing the condition (removing the broken role) makes its problem disappear at once.
+  await openFromTree(page, 'Conditions');
+  await page
+    .getByTestId('condition-card-Broken')
+    .getByRole('button', { name: 'Delete role Gone' })
+    .click();
+  await expect(broken).toHaveCount(0);
+  await expect(page.getByTestId('messages')).toContainText('Errors: 1');
+});
