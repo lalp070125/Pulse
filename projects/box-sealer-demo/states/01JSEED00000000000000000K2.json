@@ -1,0 +1,61 @@
+{
+  "id": "01JSEED00000000000000000K2",
+  "name": "Feed",
+  "description": "Conveyor runs until a box reaches the stop.",
+  "roles": [
+    {
+      "id": "01JSEED00000000000000000CG",
+      "name": "Conveyor",
+      "kind": "equipment",
+      "equipment": "01JSEED0000000000000000068"
+    },
+    {
+      "id": "01JSEED00000000000000000CH",
+      "name": "Lamp",
+      "kind": "equipment",
+      "equipment": "01JSEED0000000000000000076"
+    }
+  ],
+  "onEntry": [
+    {
+      "id": "01JSEED00000000000000000FQ",
+      "kind": "global",
+      "target": "01JSEED000000000000000009E",
+      "value": {
+        "from": "literal",
+        "value": true
+      }
+    },
+    {
+      "id": "01JSEED00000000000000000FR",
+      "kind": "equipment",
+      "target": {
+        "kind": "roleSignal",
+        "role": "01JSEED00000000000000000CH",
+        "interface": "01JSEED000000000000000004C",
+        "signal": "01JSEED000000000000000004D"
+      },
+      "value": {
+        "from": "literal",
+        "value": true
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "01JSEED00000000000000000FS",
+      "kind": "equipment",
+      "target": {
+        "kind": "roleSignal",
+        "role": "01JSEED00000000000000000CG",
+        "interface": "01JSEED0000000000000000034",
+        "signal": "01JSEED0000000000000000035"
+      },
+      "value": {
+        "from": "literal",
+        "value": true
+      }
+    }
+  ],
+  "onExit": []
+}

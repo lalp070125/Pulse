@@ -1,0 +1,13 @@
+{
+  "id": "01JSEED00000000000000000NW",
+  "name": "StartPressed",
+  "description": "Start button pressed (rising edge).",
+  "roles": [],
+  "expr": {
+    "op": "rising",
+    "ref": {
+      "kind": "global",
+      "global": "01JSEED000000000000000009C"
+    }
+  }
+}

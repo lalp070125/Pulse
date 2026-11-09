@@ -1,0 +1,16 @@
+{
+  "id": "01JSEED000000000000000003R",
+  "name": "ISensor",
+  "description": "A presence sensor.",
+  "signals": [
+    {
+      "id": "01JSEED000000000000000003S",
+      "name": "Present",
+      "type": {
+        "kind": "bool"
+      },
+      "direction": "feedback",
+      "description": "Something is in front of the sensor"
+    }
+  ]
+}

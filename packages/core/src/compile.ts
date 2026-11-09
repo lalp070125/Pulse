@@ -183,7 +183,6 @@ export function compileProject(project: Project): CompiledProject {
   const warn = (where: string, message: string) =>
     problems.push({ level: 'warning', where, message });
 
-  const globals = new Map(project.globals.map((g) => [g.id, g]));
   const interfaces = new Map(project.interfaces.map((i) => [i.id, i]));
   const equipment = new Map(project.equipment.map((e) => [e.id, e]));
   const conditionTemplates = new Map(project.conditions.map((c) => [c.id, c]));

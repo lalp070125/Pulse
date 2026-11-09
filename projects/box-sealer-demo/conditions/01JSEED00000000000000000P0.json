@@ -1,0 +1,19 @@
+{
+  "id": "01JSEED00000000000000000P0",
+  "name": "SealDone",
+  "description": "The timer has finished.",
+  "roles": [
+    {
+      "id": "01JSEED00000000000000000CR",
+      "name": "Timer",
+      "kind": "timer"
+    }
+  ],
+  "expr": {
+    "op": "timerDone",
+    "timer": {
+      "kind": "roleTimer",
+      "role": "01JSEED00000000000000000CR"
+    }
+  }
+}

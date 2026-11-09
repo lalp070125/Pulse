@@ -1,0 +1,22 @@
+{
+  "id": "01JSEED00000000000000000NY",
+  "name": "BoxArrived",
+  "description": "A box is at the stop.",
+  "roles": [
+    {
+      "id": "01JSEED00000000000000000CM",
+      "name": "Sensor",
+      "kind": "equipment",
+      "equipment": "01JSEED000000000000000006J"
+    }
+  ],
+  "expr": {
+    "op": "var",
+    "ref": {
+      "kind": "roleSignal",
+      "role": "01JSEED00000000000000000CM",
+      "interface": "01JSEED000000000000000003R",
+      "signal": "01JSEED000000000000000003S"
+    }
+  }
+}

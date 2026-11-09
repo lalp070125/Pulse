@@ -1,0 +1,15 @@
+{
+  "id": "01JSEED000000000000000004C",
+  "name": "IIndicator",
+  "description": "A lamp.",
+  "signals": [
+    {
+      "id": "01JSEED000000000000000004D",
+      "name": "On",
+      "type": {
+        "kind": "bool"
+      },
+      "direction": "command"
+    }
+  ]
+}

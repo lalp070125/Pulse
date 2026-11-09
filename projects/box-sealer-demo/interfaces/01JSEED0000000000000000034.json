@@ -1,0 +1,25 @@
+{
+  "id": "01JSEED0000000000000000034",
+  "name": "IMotor",
+  "description": "A motor that can be switched on and reports that it runs.",
+  "signals": [
+    {
+      "id": "01JSEED0000000000000000035",
+      "name": "Run",
+      "type": {
+        "kind": "bool"
+      },
+      "direction": "command",
+      "description": "Switch the motor on"
+    },
+    {
+      "id": "01JSEED0000000000000000036",
+      "name": "Running",
+      "type": {
+        "kind": "bool"
+      },
+      "direction": "feedback",
+      "description": "The motor is turning"
+    }
+  ]
+}
