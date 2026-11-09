@@ -1,0 +1,9 @@
+{
+  "name": "Pulso",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "postCreateCommand": "npm install",
+  "forwardPorts": [4600],
+  "portsAttributes": {
+    "4600": { "label": "Pulso", "onAutoForward": "notify" }
+  }
+}

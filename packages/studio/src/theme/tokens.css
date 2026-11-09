@@ -1,0 +1,66 @@
+/*
+ * Design tokens (SPEC 4.2). Every colour, size and font used by the UI lives here.
+ * Components must never hard-code a colour or a shell size.
+ */
+:root {
+  /* --- exact tokens from SPEC 4.2 --- */
+  --bg-0: #070a12; /* app background, title bar */
+  --bg-1: #0d1220; /* panels, sidebars */
+  --bg-2: #131a2b; /* cards, nodes, inputs */
+  --bg-3: #1b2438; /* hover, raised rows */
+  --grid-line: #18203a; /* canvas grid */
+  --border: #232c44;
+  --border-strong: #34405f;
+
+  --text-1: #e6eaf5; /* primary */
+  --text-2: #9aa5bf; /* secondary */
+  --text-3: #5e6a86; /* disabled, hints */
+
+  --accent: #7c5cff; /* selection, active mode, primary identity */
+  --accent-soft: #2a2157; /* selected row background */
+  --focus: #3b82f6; /* active tab, focus ring, primary buttons */
+
+  --ok: #22c55e; /* pass, running, connected, Save */
+  --warn: #f59e0b; /* warnings, connecting, alarm banner */
+  --err: #ef4444; /* fail, fault, offline, Stop */
+  --info: #38bdf8;
+
+  /* log event chips */
+  --ev-action: #f97316;
+  --ev-trans: #14b8a6;
+  --ev-cond: #a855f7;
+  --ev-bus: #3b82f6;
+  --ev-logic: #eab308;
+  --ev-inject: #ec4899;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --row-h: 24px; /* tree rows, table rows */
+
+  /* --- derived tokens (not in the spec list, built only from the values above) --- */
+  --text-on-fill: #ffffff; /* text on --focus / --accent fills (SPEC 4.3 "white text") */
+  --err-tint: color-mix(in srgb, var(--err) 12%, transparent); /* error row tint */
+  --shadow-menu: 0 8px 24px color-mix(in srgb, var(--bg-0) 80%, transparent); /* menus, dialogs only */
+  --backdrop: color-mix(in srgb, var(--bg-0) 70%, transparent);
+
+  /* shell sizes (SPEC 4.3) */
+  --h-title: 28px;
+  --h-menu: 26px;
+  --h-strip: 24px;
+  --h-status: 22px;
+  --h-tab: 28px;
+  --h-msg-row: 22px;
+  --w-sidebar: 260px;
+  --w-inspector: 280px;
+  --h-bottom: 220px;
+  --min-app-width: 1280px;
+  --pad: 8px; /* minimum inner padding */
+  --icon: 14px;
+  --motion: 120ms ease-out; /* hover and selection only */
+}
