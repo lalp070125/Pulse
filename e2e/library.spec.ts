@@ -303,3 +303,92 @@ test('States: three action groups, action menu, text forms, drag to reorder', as
   ]);
   await page.screenshot({ path: `${SHOTS}/states.png` });
 });
+
+test('Machines composer: instances, timers, state and condition use, binding table', async ({
+  page,
+}) => {
+  await newProject(page);
+  await seedLibrary(page);
+  // Add one state and one condition template that use roles, straight into the project.
+  const got = (await (await page.request.get('/api/project')).json()) as { project: Project };
+  const p = got.project;
+  const id = (n: number) => `01JTEST${String(n).padStart(19, '0')}`;
+  const cyl = p.equipment[0]!;
+  const iface = p.interfaces[0]!;
+  p.states.push({
+    id: id(30),
+    name: 'Push',
+    roles: [
+      { id: id(31), name: 'Pusher', kind: 'equipment', equipment: cyl.id },
+      { id: id(32), name: 'SealTimer', kind: 'timer' },
+    ],
+    onEntry: [
+      {
+        id: id(33),
+        kind: 'equipment',
+        target: {
+          kind: 'roleSignal',
+          role: id(31),
+          interface: iface.id,
+          signal: iface.signals[0]!.id,
+        },
+        value: { from: 'literal', value: true },
+      },
+    ],
+    steps: [],
+    onExit: [],
+  });
+  p.conditions.push({
+    id: id(40),
+    name: 'PusherOut',
+    roles: [{ id: id(41), name: 'Pusher', kind: 'equipment', equipment: cyl.id }],
+    expr: {
+      op: 'var',
+      ref: { kind: 'roleSignal', role: id(41), interface: iface.id, signal: iface.signals[1]!.id },
+    },
+  });
+  expect((await page.request.put('/api/project', { data: { project: p } })).ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title-text')).toContainText('lib-');
+
+  await openFromTree(page, 'Machines');
+  await page.getByTestId('editor-new').click();
+  await page.getByTestId('dialog-input').fill('Sealer');
+  await page.getByTestId('dialog-ok').click();
+  const card = page.getByTestId('machine-card-Sealer');
+
+  await card.getByTestId('add-instance').click();
+  await card.getByTestId('instance-name').fill('Pusher');
+  await card.getByTestId('add-timer').click();
+  await card.getByTestId('timer-name').fill('SealTime');
+  await card.getByTestId('add-state-instance').selectOption({ label: 'Push' });
+  await card.getByTestId('add-condition-instance').selectOption({ label: 'PusherOut' });
+  await expect(card.getByTestId('state-instance')).toHaveCount(1);
+  await expect(card.getByTestId('condition-instance')).toHaveCount(1);
+
+  // Three roles to bind (Push: Pusher + SealTimer; PusherOut: Pusher); all start unbound, in warning colour.
+  await expect(card.getByTestId('unbound-count')).toHaveText('3 unbound');
+  const firstRow = card.getByTestId("binding-State 'Push'-Pusher");
+  await expect(firstRow).toHaveClass(/row-warn/);
+  await expect(firstRow.getByTestId('binding-select')).toHaveValue('');
+  // The device role only offers instances of the right type.
+  await expect(firstRow.getByTestId('binding-select').locator('option')).toHaveText([
+    '— not bound —',
+    'Pusher',
+  ]);
+
+  // Bind one by hand, the rest with Auto-bind.
+  await firstRow.getByTestId('binding-select').selectOption({ label: 'Pusher' });
+  await expect(card.getByTestId('unbound-count')).toHaveText('2 unbound');
+  await card.getByTestId('auto-bind').click();
+  await expect(card.getByTestId('unbound-count')).toHaveText('All roles bound');
+  await expect(firstRow).not.toHaveClass(/row-warn/);
+
+  await page.keyboard.press('Control+s');
+  await expect(page.getByTestId('status-saved')).toContainText('No unsaved');
+  await page.reload();
+  await openFromTree(page, 'Machines');
+  const again = page.getByTestId('machine-card-Sealer');
+  await expect(again.getByTestId('unbound-count')).toHaveText('All roles bound');
+  await page.screenshot({ path: `${SHOTS}/machines.png` });
+});

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ConditionsEditor } from './ConditionsEditor';
 import { EquipmentEditor } from './EquipmentEditor';
 import { StatesEditor } from './StatesEditor';
+import { MachinesEditor } from './MachinesEditor';
 import { GlobalsEditor } from './GlobalsEditor';
 import { InterfacesEditor } from './InterfacesEditor';
 
@@ -18,6 +19,8 @@ export function editorForTab(tabId: string): ReactNode | null {
       return <ConditionsEditor />;
     case 'doc:lib.states':
       return <StatesEditor />;
+    case 'doc:machines':
+      return <MachinesEditor />;
     default:
       return null;
   }

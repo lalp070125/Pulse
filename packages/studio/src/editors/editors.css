@@ -571,3 +571,39 @@ select option {
   padding: 6px 8px 8px 28px;
   border-top: 1px solid var(--border);
 }
+
+/* composer */
+.sub-section {
+  border-top: 1px solid var(--border);
+  padding: 8px 0 4px;
+}
+.sub-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.inline-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.muted {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.warn-text {
+  color: var(--warn);
+  font-size: var(--fs-sm);
+}
+.row-warn td {
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+}
+.input.invalid-warn {
+  border-color: var(--warn);
+}
+.grid.compact td {
+  vertical-align: middle;
+}
