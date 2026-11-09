@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { Project } from '@pulso/core';
 
 /** Phase 2: the library editors, driven through the real UI. Each test makes its own project. */
 
@@ -141,4 +142,95 @@ test('Equipment: made of interfaces, with a simulated behaviour', async ({ page 
   await expect(again.getByTestId('sim-delay')).toHaveValue('100');
   await expect(again.getByTestId('sim-feedback')).toHaveValue(/.+\/.+/);
   await page.screenshot({ path: `${SHOTS}/equipment.png` });
+});
+
+/** Puts library items straight into the open project, so the editor under test has something to use. */
+async function seedLibrary(page: Page): Promise<void> {
+  const got = (await (await page.request.get('/api/project')).json()) as { project: Project };
+  const p = got.project;
+  const id = (n: number) => `01JTEST${String(n).padStart(19, '0')}`;
+  p.globals.push(
+    { id: id(1), name: 'Stop', type: { kind: 'bool' }, default: false },
+    { id: id(2), name: 'Count', type: { kind: 'int' }, default: 0 },
+  );
+  p.interfaces.push({
+    id: id(10),
+    name: 'ICylinder',
+    signals: [
+      { id: id(11), name: 'Extend', type: { kind: 'bool' }, direction: 'command' },
+      { id: id(12), name: 'Extended', type: { kind: 'bool' }, direction: 'feedback' },
+    ],
+  });
+  p.equipment.push({ id: id(20), name: 'Cylinder', interfaces: [id(10)] });
+  const res = await page.request.put('/api/project', { data: { project: p } });
+  expect(res.ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title-text')).toContainText('lib-');
+}
+
+test('Conditions: IF row from boxes, NOT, brackets, compare, summary, alarm', async ({ page }) => {
+  await newProject(page);
+  await seedLibrary(page);
+  await openFromTree(page, 'Conditions');
+  await page.getByTestId('editor-new').click();
+  await page.getByTestId('dialog-input').fill('PusherOut');
+  await page.getByTestId('dialog-ok').click();
+  const card = page.getByTestId('condition-card-PusherOut');
+
+  // A role: "a Cylinder", called Pusher.
+  await card.getByTestId('add-role').click();
+  await card.getByTestId('role-name').fill('Pusher');
+
+  // First term from the picker: the picker only offers bool variables for a true/false slot.
+  await card.getByTestId('add-term').click();
+  const picker = page.getByTestId('variable-picker');
+  await expect(picker).toBeVisible();
+  await expect(picker).not.toContainText('Global.Count'); // an int does not fit a true/false slot
+  await picker.getByTestId('picker-search').fill('Extended');
+  await picker
+    .getByTestId('picker-item')
+    .filter({ hasText: 'Pusher.ICylinder.Extended' })
+    .first()
+    .click();
+
+  // Second term: NOT Global.Stop.
+  await card.getByTestId('add-term').click();
+  await page.getByTestId('picker-search').fill('Stop');
+  await page.getByTestId('picker-item').filter({ hasText: 'Global.Stop' }).first().click();
+  await card.getByTestId('not-toggle').last().click();
+
+  // A comparison: Global.Count ≥ 3 (the int is offered here, not in the true/false slot).
+  await card.getByTestId('add-compare').click();
+  await page.getByTestId('picker-search').fill('Count');
+  await page.getByTestId('picker-item').filter({ hasText: 'Global.Count' }).first().click();
+  await card.getByTestId('cmp-op').selectOption('ge');
+  await card.getByTestId('operand-literal').fill('3');
+
+  // The first "true" placeholder is still there: remove it.
+  await card.getByTestId('delete-term').first().click();
+
+  await expect(card.getByTestId('condition-summary')).toContainText(
+    'IF( Pusher.ICylinder.Extended AND NOT Global.Stop AND Global.Count ≥ 3 )',
+  );
+
+  // Switch the last link to OR and bracket the comparison to make precedence explicit.
+  await card.getByTestId('group-op').last().selectOption('or');
+  await expect(card.getByTestId('condition-summary')).toContainText(' OR ');
+
+  // Alarm section.
+  await card.getByTestId('alarm-toggle').click();
+  await card.getByTestId('alarm-enabled').check();
+  await card.getByTestId('alarm-severity').selectOption('critical');
+  await card.getByTestId('alarm-group').fill('Pusher');
+  await card.getByTestId('alarm-message').fill('Pusher is out of position');
+
+  await page.keyboard.press('Control+s');
+  await expect(page.getByTestId('status-saved')).toContainText('No unsaved');
+  await page.reload();
+  await openFromTree(page, 'Conditions');
+  const again = page.getByTestId('condition-card-PusherOut');
+  await expect(again.getByTestId('condition-summary')).toContainText('Pusher.ICylinder.Extended');
+  // A condition that is an alarm opens its Alarm section by itself.
+  await expect(again.getByTestId('alarm-message')).toHaveValue('Pusher is out of position');
+  await page.screenshot({ path: `${SHOTS}/conditions.png` });
 });

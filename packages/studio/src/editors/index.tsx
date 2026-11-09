@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ConditionsEditor } from './ConditionsEditor';
 import { EquipmentEditor } from './EquipmentEditor';
 import { GlobalsEditor } from './GlobalsEditor';
 import { InterfacesEditor } from './InterfacesEditor';
@@ -12,6 +13,8 @@ export function editorForTab(tabId: string): ReactNode | null {
       return <InterfacesEditor />;
     case 'doc:lib.equipment':
       return <EquipmentEditor />;
+    case 'doc:lib.conditions':
+      return <ConditionsEditor />;
     default:
       return null;
   }

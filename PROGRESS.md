@@ -8,6 +8,7 @@ Branch: `phase-2-library-editors`
 - Global Variables editor (all types incl. nested array/map/record) + browser test `e2e/library.spec.ts`
 - Interfaces editor (card per interface, typed and directed signals) + browser test
 - Equipment editor (interfaces it is made of, simulated behaviour) + browser test
+- Conditions editor: roles, IF row of term boxes (operators, NOT, brackets, compare), read-only summary, alarm section, variable picker (typed, searchable, categories) + shared text helpers in core (`catalog.ts`) tested against the compiler
 
 ## Next
 
