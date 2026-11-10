@@ -3,6 +3,7 @@ import { ConditionsEditor } from './ConditionsEditor';
 import { EquipmentEditor } from './EquipmentEditor';
 import { StatesEditor } from './StatesEditor';
 import { MachinesEditor } from './MachinesEditor';
+import { RoutingEditor } from './RoutingEditor';
 import { GlobalsEditor } from './GlobalsEditor';
 import { InterfacesEditor } from './InterfacesEditor';
 import { PlannerEditor } from '../planner/Planner';
@@ -13,6 +14,8 @@ import { InspectorsView } from '../monitor/Inspectors';
 /** The editor that belongs to an open tab (ids look like `doc:lib.globals`), or null if none yet. */
 export function editorForTab(tabId: string): ReactNode | null {
   switch (tabId) {
+    case 'doc:routing':
+      return <RoutingEditor />;
     case 'doc:lib.globals':
       return <GlobalsEditor />;
     case 'doc:lib.interfaces':

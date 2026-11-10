@@ -607,3 +607,32 @@ select option {
 .grid.compact td {
   vertical-align: middle;
 }
+
+/* Routing editor */
+.route-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+.route-count {
+  margin-left: auto;
+  color: var(--text-3);
+}
+.route-cell {
+  white-space: nowrap;
+}
+.route-cell input[type='checkbox'] {
+  margin-right: 6px;
+}
+.route-problems {
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--err);
+  background: var(--err-tint);
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+}
