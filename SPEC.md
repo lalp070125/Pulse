@@ -641,6 +641,10 @@ Everything in 6.3 including placeholders, Construct Machine, priorities, back-wi
 Tick loop with per-machine cycle time, WebSocket streaming, Deploy/Start/Stop/Step, live plan, focused signals, waveform monitor with cursor and forcing, event log viewer, session files, timing figures.
 *Accept*: start the demo, watch states light up, force `BoxAtStop` from the chart, read why a transition did not fire from the log.
 
+**Phase 8 — Pulso Twin**
+All of section 10.
+*Accept*: with routing switched from Sim to Twin, the unchanged `Sealer` logic runs the 3D station; boxes flow; a jammed pusher raises the alarm.
+
 **Phase 5 — Test Manager**
 All of section 8 including regression comparison and coverage with gap list.
 *Accept*: seed tests run; a deliberate change produces "Regression"; the gap list names the uncovered transition and the unreachable-state check works.
@@ -651,10 +655,6 @@ Section 5.10 with the Advisor, queue diagram tab, sub-machines, Auto/Manual mode
 **Phase 7 — Pulso Panel**
 All of section 9, including Build to a standalone page.
 *Accept*: the built demo panel starts and stops the running machine from a second browser tab and shows the `PusherStuck` alarm.
-
-**Phase 8 — Pulso Twin**
-All of section 10.
-*Accept*: with routing switched from Sim to Twin, the unchanged `Sealer` logic runs the 3D station; boxes flow; a jammed pusher raises the alarm.
 
 **Phase 9 — AI layer**
 Section 11: MCP server first, then the Describe panel.
