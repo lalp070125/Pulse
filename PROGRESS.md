@@ -6,7 +6,7 @@ SPEC section 14 now lists the phases in this order: 0, 1, 2, 3, 4, **8**, 5, 6, 
 
 **Reason:** the owner's goal is a 3D twin with real physics, runtime streaming and the Line Builder, running the box closing machine (`docs/box-closing-machine-design.md`). So Phase 4 (runtime, streaming, Monitor) comes next, then Phase 8 (Twin), before tests, logic blocks and the Panel.
 
-**Approved exception to "one phase at a time" (owner, 2026-11-10):** the 3D scene part of Phase 8 may be built in parallel with Phase 4, by a second Claude session on its own branch, after Phase 3 is merged (done). Not started: waiting for the owner's approval of the parallel-work plan.
+**Approved exception to "one phase at a time" (owner, 2026-11-10):** the 3D scene part of Phase 8 may be built in parallel with Phase 4, by a second Claude session on its own branch, after Phase 3 is merged (done). The scene was built in a separate session on `claude/determined-mayer-kof2u1` and checked out in `/workspaces/Pulse-twin` (branch `phase-8-twin-scene`, port 4620). It is not merged: it sits on the older prep commit and needs `main` merged into it first. Not yet checked by eye by the owner.
 
 **Decided (owner, 2026-11-10):**
 
@@ -19,6 +19,30 @@ SPEC section 14 now lists the phases in this order: 0, 1, 2, 3, 4, **8**, 5, 6, 
 
 - Box closing machine design (`docs/box-closing-machine-design.md`): a candidate for rebuilding in the Planner after Phase 3 and for the Phase 8 Twin demo. Review the Twin labels in SPEC 10.1 before Phase 8 and rename any that look copied from other products.
 - 3D reference screenshot for the Phase 8 Twin: `docs/reference/twin-3d-reference.webp`, with its note (look and function only; it is from another product).
+
+## Phase 4 — Runtime and Monitor
+
+Merged to `main` (owner confirmed 2026-11-10, merge commit `898c87f`).
+
+### Done
+
+- **Runtime** (`packages/runtime/src/live.ts`): tick loop on the wall clock using each machine's cycle time; Deploy, Start, Stop, Step, Force; streamed batches (about 20 per second); timing figures (scan, jitter, overruns); session files (`.sessions/`, `.jsonl`, rotated, never committed) that can be listed and reopened. 7 tests on a manual clock.
+- **Studio**: live store, Deploy / Start / Stop / Step in the strip (Deploy saves first), runtime lamps, tick and cycle in the status bar.
+- **Monitor tab** (Live Plan, Waveform Monitor, Event Log shown together): active states glow, HELD / FAULT tags, transition flash, wire tooltips with live condition values; event log with filters (clicking a row moves the cursor and highlights the state); waveform with focused signals (click a state), cursor, zoom, pause, force, session replay.
+- **Inspectors tab**: live timers, a Queues note (Phase 6), timing per machine.
+- **Routing editor** (SPEC 6.2): Sim / Twin / Panel columns with Read / Write, one reader per variable, commands cannot be read, filters, reset to default, saved to `routing.json`. Compiled variables now carry their ID reference (`VarInfo.ref`).
+- **Shell**: Twin tree labels renamed to "Part Library" and "Placed Parts" (they copied another product's wording).
+
+### Acceptance
+
+`e2e/monitor.spec.ts`: Sealer demo started, states light up; `Global.Start` forced from the chart; in Feed the log reads `BoxArrived = false [BoxAtStop.ISensor.Present = false]`; forcing `BoxAtStop` from the chart moves the machine to Push. Five full browser-suite runs in a row passed (25 tests each) before the final rename; unit tests (105) passed on the merged `main`.
+
+### Not done / for later
+
+- The Twin lamp and routing through the runtime (Twin driver) come with Phase 8. The routing table is stored and validated only.
+- Monitor and Routing screens were not checked on a phone-sized screen.
+- The live plan opens zoomed out (about 45%).
+- The browser suite was not re-run on `main` after the merge.
 
 ## Phase 3 — Planner canvas
 
