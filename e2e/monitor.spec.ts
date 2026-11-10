@@ -67,6 +67,9 @@ test('Monitor acceptance: focus a state, force a signal from the chart, read why
   await page.getByTestId(`force-${start}`).click();
   await expect(page.getByTestId('state-node-Feed')).toHaveAttribute('data-active', 'true');
   await page.screenshot({ path: `${SHOTS}/monitor-forced.png` });
+  // Keep only the Inject type in the log (other rows arrive every tick and would scroll it away).
+  for (const t of ['Actions', 'Trans', 'Cond', 'LB'])
+    await page.getByTestId('event-log').getByLabel(t, { exact: true }).uncheck();
   await expect(page.getByTestId('log-row').filter({ hasText: 'INJECT' }).first()).toBeVisible();
 });
 
@@ -95,4 +98,17 @@ test('Monitor acceptance: force BoxAtStop and read the condition values from the
   await expect(sensor).toBeVisible();
   await sensor.click();
   await expect(page.getByTestId('state-node-Push')).toHaveAttribute('data-active', 'true');
+});
+
+test('Inspectors: timers and timing figures are live', async ({ page }) => {
+  await newProject(page, 'mon');
+  await loadSeed(page);
+  await page.getByRole('tab', { name: 'Monitor', exact: true }).click();
+  await page.getByTestId('project-tree').getByText('Inspectors', { exact: true }).click();
+  await page.getByTestId('rt-deploy').click();
+  await page.getByTestId('rt-start').click();
+  await expect(page.getByTestId('insp-timing-Sealer')).toContainText('10 ms');
+  await expect(page.getByTestId('insp-queues')).toContainText('Phase 6');
+  await expect(page.getByTestId('insp-timing-Sealer').locator('td').nth(2)).not.toHaveText('0');
+  await page.screenshot({ path: `${SHOTS}/inspectors.png` });
 });

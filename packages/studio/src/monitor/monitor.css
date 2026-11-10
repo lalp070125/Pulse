@@ -187,3 +187,26 @@
   cursor: crosshair;
   touch-action: none;
 }
+
+/* Inspectors tab */
+.insp-title {
+  margin: 16px 0 6px;
+  font-size: var(--fs-md);
+  color: var(--text-2);
+  font-weight: 500;
+}
+.insp-none {
+  padding: 6px 8px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+[data-testid='insp-timers'] [data-state='ok'],
+[data-testid='insp-timing'] [data-state='ok'] {
+  color: var(--ok);
+}
+[data-testid='insp-timers'] [data-state='off'] {
+  color: var(--text-3);
+}
+[data-testid='insp-timing'] [data-state='warn'] {
+  color: var(--warn);
+}
