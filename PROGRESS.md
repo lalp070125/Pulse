@@ -1,5 +1,16 @@
 # Progress
 
+## Phase order changed (owner decision, 2026-11-10)
+
+SPEC section 14 now lists the phases in this order: 0, 1, 2, 3, 4, **8**, 5, 6, 7, 9, 10. Phase numbers and contents are unchanged; only Phase 8 moved up. Nothing else in the spec changed.
+
+**Reason:** the owner's goal is a 3D twin with real physics, runtime streaming and the Line Builder, running the box closing machine (`docs/box-closing-machine-design.md`). So Phase 4 (runtime, streaming, Monitor) comes next, then Phase 8 (Twin), before tests, logic blocks and the Panel.
+
+**Dependencies to settle when Phase 8 starts (flagged, not decided):**
+
+- Phase 8 acceptance switches routing from Sim to Twin. The Routing (bus manager) editor of SPEC 6.2 is not listed in any phase.
+- The box machine's `Global.BoxCount = Global.BoxCount + 1` needs a computed value: logic blocks, Phase 6. Before that the twin can run the box machine without counting.
+
 ## Notes for later
 
 - Box closing machine design (`docs/box-closing-machine-design.md`): a candidate for rebuilding in the Planner after Phase 3 and for the Phase 8 Twin demo. Review the Twin labels in SPEC 10.1 before Phase 8 and rename any that look copied from other products.
