@@ -39,14 +39,17 @@ describe('runtime server (single port)', () => {
     await new Promise<void>((resolve, reject) => {
       ws.on('error', reject);
       ws.on('message', (raw) => {
-        received.push(JSON.parse(String(raw)));
+        const msg = JSON.parse(String(raw)) as { type: string };
+        received.push(msg);
         if (received.length === 1) ws.send(JSON.stringify({ type: 'ping' }));
-        if (received.length === 2) resolve();
+        if (msg.type === 'pong') resolve();
       });
     });
     ws.close();
     expect(received[0]).toMatchObject({ type: 'hello', product: PRODUCT_NAME });
-    expect(received[1]).toEqual({ type: 'pong' });
+    // After hello comes the runtime's state (nothing deployed yet), then the answer to ping.
+    expect(received[1]).toMatchObject({ type: 'runtime', deployed: false });
+    expect(received.at(-1)).toEqual({ type: 'pong' });
   });
 
   it('does not accept WebSocket connections on other paths', async () => {
