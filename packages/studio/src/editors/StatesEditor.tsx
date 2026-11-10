@@ -333,27 +333,29 @@ function ActionForm({
   );
 }
 
-function ActionGroup({
+/**
+ * One collapsible list of actions with the + Add menu, drag to reorder and a form per action.
+ * Used for On Entry / Steps / On Exit here, and for an interrupt's hold actions in the Planner.
+ */
+export function ActionGroup({
   project,
-  state,
+  roles,
   group,
+  list,
+  change,
 }: {
   project: Project;
-  state: StateTemplate;
-  group: (typeof GROUPS)[number];
+  /** What the actions may name: a template's roles, or a machine's devices and timers. */
+  roles: Role[];
+  group: { key: string; title: string; hint: string };
+  list: Action[];
+  /** Applies a change to the list. */
+  change: (fn: (actions: Action[]) => void) => void;
 }) {
-  const update = useProject((s) => s.update);
   const [open, setOpen] = useState(true);
   const [menu, setMenu] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const drag = useRef<string | null>(null);
-  const list = state[group.key];
-
-  const change = (fn: (actions: Action[]) => void) =>
-    update((p) => {
-      const s = p.states.find((x) => x.id === state.id);
-      if (s) fn(s[group.key]);
-    });
 
   return (
     <div className="agroup" data-testid={`group-${group.key}`}>
@@ -392,7 +394,7 @@ function ActionGroup({
               onPointerLeave={() => setMenu(false)}
             >
               {KINDS.map((k) => {
-                const why = unavailable(k.id, project, state.roles);
+                const why = unavailable(k.id, project, roles);
                 return (
                   <button
                     key={k.id}
@@ -404,7 +406,7 @@ function ActionGroup({
                     data-testid={`add-${k.id}`}
                     onClick={() => {
                       setMenu(false);
-                      const a = newAction(k.id, project, state.roles);
+                      const a = newAction(k.id, project, roles);
                       if (!a) return;
                       change((actions) => actions.push(a));
                       setEditing(a.id);
@@ -457,12 +459,12 @@ function ActionGroup({
                 </span>
                 <button
                   type="button"
-                  className={`action-text mono ${actionText(project, state.roles, a).includes('(missing)') ? 'term-bad' : ''}`}
+                  className={`action-text mono ${actionText(project, roles, a).includes('(missing)') ? 'term-bad' : ''}`}
                   data-testid="action-text"
                   title="Click to edit"
                   onClick={() => setEditing(editing === a.id ? null : a.id)}
                 >
-                  {actionText(project, state.roles, a)}
+                  {actionText(project, roles, a)}
                 </button>
                 <IconButton
                   title="Delete action"
@@ -479,7 +481,7 @@ function ActionGroup({
               {editing === a.id && (
                 <ActionForm
                   project={project}
-                  roles={state.roles}
+                  roles={roles}
                   action={a}
                   onChange={(next) =>
                     change((actions) => {
@@ -530,7 +532,14 @@ function Card({ s, others }: { s: StateTemplate; others: string[] }) {
       </header>
       <RolesEditor roles={s.roles} change={(fn) => edit((x) => fn(x.roles))} />
       {GROUPS.map((g) => (
-        <ActionGroup key={g.key} project={project} state={s} group={g} />
+        <ActionGroup
+          key={g.key}
+          project={project}
+          roles={s.roles}
+          group={g}
+          list={s[g.key]}
+          change={(fn) => edit((x) => fn(x[g.key]))}
+        />
       ))}
     </section>
   );

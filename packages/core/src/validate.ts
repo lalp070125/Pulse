@@ -18,6 +18,28 @@ export type LocatorKind = 'global' | 'interface' | 'equipment' | 'condition' | '
 export interface Locator {
   kind: LocatorKind;
   id: string;
+  /** For machines: the problem is in the drawn logic, so open the Planner (SPEC 6.3), not the composer. */
+  planner?: boolean;
+  /** The state node or transition inside the machine to show. */
+  item?: string;
+}
+
+/** Problems about the state graph belong to the Planner; the rest of a machine to the composer. */
+function plannerTopic(p: Problem): boolean {
+  return (
+    /› (transition|abort|interrupt)/.test(p.where) ||
+    /Init node|priority/.test(p.message) ||
+    (/› state '/.test(p.where) && /transition/.test(p.message))
+  );
+}
+
+/** Adds the Planner target to a machine locator: the state named in "› state 'X'", if any. */
+function inPlanner(project: Project, at: Locator | undefined, p: Problem): Locator | undefined {
+  if (!at || at.kind !== 'machine' || !plannerTopic(p)) return at;
+  const m = project.machines.find((x) => x.machine.id === at.id)?.machine;
+  const state = /› state '([^']+)'/.exec(p.where)?.[1];
+  const node = state ? m?.states.find((s) => s.name === state) : undefined;
+  return { ...at, planner: true, item: node?.id };
 }
 
 export interface Issue extends Problem {
@@ -75,7 +97,7 @@ function reachability(m: Machine): { reachable: Set<string>; outgoing: Set<strin
 export function validateProject(project: Project): Issue[] {
   const issues: Issue[] = compileProject(project).problems.map((p) => ({
     ...p,
-    at: locate(project, p.where),
+    at: inPlanner(project, locate(project, p.where), p),
   }));
 
   // Library items that still point at something that no longer exists.
@@ -135,7 +157,7 @@ export function validateProject(project: Project): Issue[] {
           level: 'error',
           where,
           message: `the transition ${from} → ${to} has no condition`,
-          at,
+          at: { ...at, planner: true, item: t.id },
         });
       }
     }
@@ -147,14 +169,14 @@ export function validateProject(project: Project): Issue[] {
           level: 'warning',
           where: `${where} › state '${s.name}'`,
           message: `is unreachable: nothing leads to it from Init`,
-          at,
+          at: { ...at, planner: true, item: s.id },
         });
       } else if (!outgoing.has(s.id)) {
         issues.push({
           level: 'warning',
           where: `${where} › state '${s.name}'`,
           message: `has no way out: no transition leaves it`,
-          at,
+          at: { ...at, planner: true, item: s.id },
         });
       }
     }

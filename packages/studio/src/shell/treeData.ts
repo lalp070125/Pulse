@@ -79,7 +79,7 @@ const PLAN: TreeNode[] = [
     ],
   },
   { id: 'machines', label: 'Machines', icon: 'machine', hint: 'composer', group: true, phase: 2 },
-  { id: 'planner', label: 'Planner', icon: 'planner', hint: 'canvas', phase: 3 },
+  { id: 'planner', label: 'Planner', icon: 'planner', hint: 'canvas' },
 ];
 
 const MONITOR: TreeNode[] = [
