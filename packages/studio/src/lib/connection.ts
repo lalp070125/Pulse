@@ -1,4 +1,5 @@
-import { type HealthInfo, type ServerMessage } from '@pulso/core';
+import { type ClientMessage, type HealthInfo, type ServerMessage } from '@pulso/core';
+import { useLive } from '../state/live';
 import { useShell } from '../state/store';
 
 /**
@@ -35,6 +36,12 @@ function open(): void {
     } catch {
       return;
     }
+    if (msg.type === 'runtime') return useLive.getState().applySnapshot(msg);
+    if (msg.type === 'live') return useLive.getState().applyBatch(msg);
+    if (msg.type === 'error') {
+      useShell.getState().log('error', 'Runtime', msg.message);
+      return;
+    }
     if (msg.type === 'hello') {
       wasConnected = true;
       useShell.getState().setConnection('connected');
@@ -57,6 +64,16 @@ function open(): void {
     }
     retryTimer = window.setTimeout(open, RETRY_MS);
   };
+}
+
+/** Sends a command to the runtime. Returns false when the connection is down. */
+export function sendToRuntime(msg: ClientMessage): boolean {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    useShell.getState().log('warning', 'Runtime', 'Not connected to the runtime.');
+    return false;
+  }
+  socket.send(JSON.stringify(msg));
+  return true;
 }
 
 export function startConnection(): () => void {

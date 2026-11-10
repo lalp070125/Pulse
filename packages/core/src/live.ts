@@ -93,6 +93,8 @@ export type ServerMessage =
 /** Messages the Studio sends over the live WebSocket (/ws). */
 export type ClientMessage =
   | { type: 'ping' }
+  /** Send the full runtime state again (after looking at a recorded session). */
+  | { type: 'snapshot' }
   /** Compile the saved project and load it into the runtime (stopped, at tick 0). */
   | { type: 'deploy' }
   | { type: 'start' }

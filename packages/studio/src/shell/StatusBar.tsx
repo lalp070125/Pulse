@@ -1,4 +1,5 @@
 import { useDirty } from '../state/project';
+import { useLive } from '../state/live';
 import { useShell } from '../state/store';
 
 const TEXT = {
@@ -13,6 +14,9 @@ export function StatusBar() {
   const address = useShell((s) => s.runtimeAddress);
   const app = useShell((s) => s.app);
   const dirty = useDirty();
+  const deployed = useLive((s) => s.deployed);
+  const tick = useLive((s) => s.tick);
+  const timing = useLive((s) => s.timing);
 
   return (
     <footer className="statusbar" data-testid="statusbar">
@@ -26,8 +30,12 @@ export function StatusBar() {
         <span title="Unsaved changes" data-testid="status-saved" className={dirty ? 'unsaved' : ''}>
           {dirty ? 'Unsaved changes' : 'No unsaved changes'}
         </span>
-        <span title="Cycle time of the selected machine">Cycle: —</span>
-        <span title="Ticks executed by the runtime">Tick: —</span>
+        <span title="Cycle time of each deployed machine" data-testid="status-cycle">
+          Cycle: {timing.length ? timing.map((t) => `${t.cycleMs} ms`).join(' / ') : '—'}
+        </span>
+        <span title="Base ticks executed by the runtime" data-testid="status-tick">
+          Tick: {deployed ? tick : '—'}
+        </span>
       </span>
     </footer>
   );

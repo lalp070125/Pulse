@@ -217,6 +217,8 @@ export async function startServer(options: PulsoServerOptions = {}): Promise<Pul
       switch (msg.type) {
         case 'ping':
           return send({ type: 'pong' });
+        case 'snapshot':
+          return send(live.snapshot());
         case 'deploy': {
           if (!current || !currentName) return fail('No project is open');
           const r = live.deploy(current, currentName);
