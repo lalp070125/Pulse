@@ -7,6 +7,7 @@ import { GlobalsEditor } from './GlobalsEditor';
 import { InterfacesEditor } from './InterfacesEditor';
 import { PlannerEditor } from '../planner/Planner';
 import { twinEditorForTab } from '../twin';
+import { MonitorView } from '../monitor/Monitor';
 
 /** The editor that belongs to an open tab (ids look like `doc:lib.globals`), or null if none yet. */
 export function editorForTab(tabId: string): ReactNode | null {
@@ -26,6 +27,8 @@ export function editorForTab(tabId: string): ReactNode | null {
     case 'twin:station':
     case 'twin:line':
       return twinEditorForTab(tabId);
+    case 'doc:monitor':
+      return <MonitorView />;
     case 'doc:planner':
       return <PlannerEditor />;
     default:

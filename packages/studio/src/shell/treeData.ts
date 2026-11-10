@@ -83,10 +83,10 @@ const PLAN: TreeNode[] = [
 ];
 
 const MONITOR: TreeNode[] = [
-  { id: 'mon.plan', label: 'Live Plan', icon: 'monitor', phase: 4 },
-  { id: 'mon.signals', label: 'Waveform Monitor', icon: 'wave', phase: 4 },
-  { id: 'mon.log', label: 'Event Log', icon: 'log', phase: 4 },
-  { id: 'mon.inspect', label: 'Inspectors', icon: 'folder', hint: 'timers, queues', phase: 4 },
+  { id: 'mon.plan', label: 'Live Plan', icon: 'monitor' },
+  { id: 'mon.signals', label: 'Waveform Monitor', icon: 'wave' },
+  { id: 'mon.log', label: 'Event Log', icon: 'log' },
+  { id: 'mon.inspect', label: 'Inspectors', icon: 'folder', hint: 'timers, queues' },
 ];
 
 const TEST: TreeNode[] = [

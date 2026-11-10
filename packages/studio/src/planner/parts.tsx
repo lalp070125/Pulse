@@ -46,6 +46,8 @@ export type MachineData = {
   minW: number;
   minH: number;
   todo: number;
+  /** Live plan only: HELD or FAULT. */
+  tag?: 'HELD' | 'FAULT' | null;
 };
 export type MachineNodeT = Node<MachineData, 'machine'>;
 
@@ -91,6 +93,14 @@ export function MachineNode({ data, selected }: NodeProps<MachineNodeT>) {
           )}
         </button>
         <span className="pl-machine-name">{data.name}</span>
+        {data.tag && (
+          <span
+            className={`pl-tag pl-tag-${data.tag.toLowerCase()}`}
+            data-testid={`tag-${data.name}`}
+          >
+            {data.tag}
+          </span>
+        )}
         {data.todo > 0 && (
           <span
             className="pl-todo"
@@ -134,6 +144,8 @@ export type StateData = {
   name: string;
   placeholder: boolean;
   entry: string[];
+  /** Live plan only. */
+  live?: { active: boolean; held: boolean; faulted: boolean; lit: boolean; focused: boolean };
 };
 export type StateNodeT = Node<StateData, 'state'>;
 
@@ -141,7 +153,12 @@ export function StateNode({ data, selected }: NodeProps<StateNodeT>) {
   const label = data.placeholder ? `[${data.name}]` : data.name;
   return (
     <div
-      className={`pl-state ${data.placeholder ? 'placeholder' : ''} ${selected ? 'selected' : ''}`}
+      className={`pl-state ${data.placeholder ? 'placeholder' : ''} ${selected ? 'selected' : ''} ${
+        data.live?.active ? 'active' : ''
+      } ${data.live?.held ? 'held' : ''} ${data.live?.faulted ? 'faulted' : ''} ${
+        data.live?.lit ? 'lit' : ''
+      } ${data.live?.focused ? 'focused' : ''}`}
+      data-active={data.live?.active ? 'true' : undefined}
       data-testid={`state-node-${data.name}`}
       title={
         data.placeholder
@@ -286,6 +303,11 @@ export type WireData = {
   placeholder?: boolean;
   /** Names for test IDs and tooltips: "Idle-Feed". */
   ends: string;
+  /** Live plan only: changes each time this wire fires (it flashes once). */
+  flash?: number;
+  /** Live plan only: the condition with the live value of each term. */
+  liveText?: string;
+  liveResult?: boolean;
 };
 export type WireEdgeT = Edge<WireData, 'wire'>;
 
@@ -305,6 +327,14 @@ export function WireEdge({ id, data, selected }: EdgeProps<WireEdgeT>) {
         className={`pl-wire pl-wire-${data.kind} ${selected ? 'selected' : ''} ${data.placeholder || open ? 'placeholder' : ''}`}
         interactionWidth={14}
       />
+      {data.flash !== undefined && (
+        <path key={data.flash} d={path} className="pl-flash" data-testid={`flash-${data.ends}`} />
+      )}
+      {data.liveText !== undefined && (
+        <path d={path} className="pl-hover" data-testid={`live-${data.ends}`}>
+          <title>{data.liveText}</title>
+        </path>
+      )}
       {data.kind === 'wire' && (
         <EdgeLabelRenderer>
           <button
@@ -331,7 +361,10 @@ export function WireEdge({ id, data, selected }: EdgeProps<WireEdgeT>) {
                   : `translate(12px, -50%) translate(${mid.x}px, ${mid.y}px)`
                 : `translate(-50%, calc(-100% - 4px)) translate(${mid.x}px, ${mid.y}px)`,
             }}
-            title="Condition. Click to select the wire (Shift adds), double-click to pick or create it."
+            title={
+              data.liveText ??
+              'Condition. Click to select the wire (Shift adds), double-click to pick or create it.'
+            }
             data-testid={`chip-${data.ends}`}
             onClick={(e) => {
               e.stopPropagation(); // the canvas behind would otherwise clear the selection again

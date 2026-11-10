@@ -26,6 +26,8 @@ export interface Sample {
 
 /** The pseudo-path of a machine's state track in `history`. */
 export const stateTrack = (machine: string) => `${machine}.@state`;
+/** The pseudo-path of a timer's elapsed time (ms) in `history`. */
+export const timerTrack = (machine: string, timer: string) => `${machine}.@timer.${timer}`;
 
 const MAX_EVENTS = 20_000;
 const MAX_SAMPLES = 20_000;
@@ -79,6 +81,22 @@ function push(list: Sample[] | undefined, t: number, v: Value): Sample[] {
 }
 
 /** Folds events into the history: SET gives a value, TRANS gives a machine's state. */
+export interface CondResult {
+  name: string;
+  result: boolean;
+  terms: { text: string; value: Value }[];
+  timeUs: number;
+}
+/**
+ * The last evaluation of each condition, by machine and role (`transition <id>`, `abort <id>`,
+ * `trigger <id>`, `resume <id>`): what a wire shows on hover (SPEC 7.1). Kept outside the store
+ * so a batch does not copy it.
+ */
+const lastCond = new Map<string, CondResult>();
+export function lastCondition(machine: string, role: string): CondResult | undefined {
+  return lastCond.get(`${machine}|${role}`);
+}
+
 function absorb(
   history: Record<string, Sample[]>,
   last: Record<string, LastTransition>,
@@ -87,6 +105,13 @@ function absorb(
   for (const e of events) {
     if (e.type === 'SET' && e.data && typeof e.data.path === 'string') {
       history[e.data.path] = push(history[e.data.path], e.timeUs, e.data.value as Value);
+    } else if (e.type === 'COND' && e.machine && e.data && typeof e.data.role === 'string') {
+      lastCond.set(`${e.machine}|${e.data.role}`, {
+        name: String(e.data.name ?? ''),
+        result: e.data.result === true,
+        terms: (e.data.terms as CondResult['terms']) ?? [],
+        timeUs: e.timeUs,
+      });
     } else if (e.type === 'TRANS' && e.machine && e.data && typeof e.data.to === 'string') {
       const key = stateTrack(e.machine);
       history[key] = push(history[key], e.timeUs, e.data.to);
@@ -125,6 +150,7 @@ export const useLive = create<LiveState>((set, get) => ({
     const history: Record<string, Sample[]> = {};
     for (const [p, v] of Object.entries(m.values)) history[p] = [{ t: 0, v }];
     const lastTransition: Record<string, LastTransition> = {};
+    lastCond.clear();
     absorb(history, lastTransition, m.events);
     for (const mc of m.machines) {
       if (mc.state)
@@ -158,6 +184,13 @@ export const useLive = create<LiveState>((set, get) => ({
     absorb(history, lastTransition, m.events);
     // Values whose SET events were dropped from the batch still reach the history here.
     for (const [p, v] of Object.entries(m.values)) history[p] = push(history[p], m.timeUs, v);
+    // Timers are not variables: their elapsed time is sampled once per batch.
+    for (const mc of m.machines) {
+      for (const [name, t] of Object.entries(mc.timers)) {
+        const key = timerTrack(mc.name, name);
+        history[key] = push(history[key], m.timeUs, t.elapsedMs);
+      }
+    }
     const events = m.events.length ? [...s.events, ...m.events] : s.events;
     if (events.length > MAX_EVENTS) events.splice(0, events.length - MAX_EVENTS);
     set({
@@ -188,6 +221,7 @@ export const useLive = create<LiveState>((set, get) => ({
     const history: Record<string, Sample[]> = {};
     for (const [p, v] of Object.entries(header.values)) history[p] = [{ t: header.timeUs, v }];
     const lastTransition: Record<string, LastTransition> = {};
+    lastCond.clear();
     absorb(history, lastTransition, events);
     const values = { ...header.values };
     for (const e of events) {

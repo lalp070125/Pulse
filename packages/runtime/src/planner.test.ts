@@ -335,3 +335,28 @@ describe('junctions (drawing only)', () => {
     expect(e.machine).toEqual(logicBefore); // no effect on the logic
   });
 });
+
+describe('focused signals (SPEC 7.2)', () => {
+  it("lists what the seed's Push state writes, the timers it uses and what its exits read", async () => {
+    const { focusedSignals } = await import('@pulso/core');
+    const p = buildBoxSealer();
+    const m = p.machines[0]!.machine;
+    const push = m.states.find((s) => s.name === 'Push')!;
+    const f = focusedSignals(p, m.id, push.id);
+    expect(f.paths).toEqual([
+      'Sealer.Conveyor.IMotor.Run',
+      'Sealer.Pusher.ICylinder.Extend',
+      'Sealer.Pusher.ICylinder.Extended', // PusherOut, and the PusherStuck abort
+    ]);
+    expect(f.timers).toEqual(['PusherWatch']);
+    const idle = m.states.find((s) => s.name === 'Idle')!;
+    expect(focusedSignals(p, m.id, idle.id).paths).toEqual([
+      'Sealer.Conveyor.IMotor.Run',
+      'Global.Running',
+      'Sealer.Lamp.IIndicator.On',
+      'Global.Start',
+      'Sealer.Pusher.ICylinder.Extend',
+      'Sealer.Pusher.ICylinder.Extended',
+    ]);
+  });
+});

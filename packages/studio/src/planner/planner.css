@@ -502,3 +502,68 @@
     font-size: var(--fs-xs);
   }
 }
+
+/* --- live plan (Monitor, SPEC 7.1) --------------------------------------------------- */
+.pl-state.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-3));
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.pl-state.active.held {
+  border-color: var(--warn);
+  box-shadow: 0 0 0 2px var(--warn);
+}
+.pl-state.active.faulted {
+  border-color: var(--err);
+  box-shadow: 0 0 0 2px var(--err);
+}
+.pl-state.lit {
+  outline: 2px dashed var(--info);
+  outline-offset: 3px;
+}
+.pl-state.focused .pl-state-head {
+  color: var(--info);
+}
+.pl-tag {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+}
+.pl-tag-held {
+  background: var(--warn);
+  color: var(--bg-0);
+}
+.pl-tag-fault {
+  background: var(--err);
+  color: var(--text-on-fill);
+}
+.pl-flash {
+  fill: none;
+  stroke: var(--ev-trans);
+  stroke-width: 4;
+  opacity: 0;
+  animation: pl-flash 900ms ease-out;
+  pointer-events: none;
+}
+@keyframes pl-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.pl-hover {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  pointer-events: stroke;
+}
+.pl-live-title {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+.pl-live-note {
+  font-size: var(--fs-xs);
+}

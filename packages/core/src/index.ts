@@ -47,3 +47,4 @@ export * from './catalog';
 export * from './validate';
 export * from './planner';
 export * from './live';
+export * from './focus';
