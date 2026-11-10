@@ -37,6 +37,8 @@ export type Part =
       retracted: Vec3;
       extended: Vec3;
       travelMs: number;
+      /** How it is drawn: a pusher plate or a press head. */
+      look?: 'pusher' | 'press';
     }
   | {
       id: string;
@@ -46,7 +48,8 @@ export type Part =
       to: Vec3;
     }
   | { id: string; kind: 'indicator'; at: Vec3 }
-  | { id: string; kind: 'block'; at: Vec3; size: Vec3 };
+  /** Static scenery with a solid surface: frames, stops, tables. */
+  | { id: string; kind: 'block'; at: Vec3; size: Vec3; look?: 'frame' | 'steel' };
 
 export type PartKind = Part['kind'];
 export type Direction = 'command' | 'sensor';
@@ -110,6 +113,37 @@ export function checkBindings(station: Station, table: Binding[]): string[] {
   for (const p of ports.keys())
     if (!seenPort.has(p)) problems.push(`"${p}" is not bound to anything.`);
   return problems;
+}
+
+/** A sphere around every part, for fitting the view. */
+export function stationBounds(station: Station): { center: Vec3; radius: number } {
+  const pts: Vec3[] = [[0, 0, 0]]; // the floor under the station
+  for (const p of station.parts) {
+    switch (p.kind) {
+      case 'conveyor':
+        pts.push([p.at[0] - p.length / 2, p.at[1], p.at[2] - p.width / 2]);
+        pts.push([p.at[0] + p.length / 2, p.at[1], p.at[2] + p.width / 2]);
+        break;
+      case 'block':
+        pts.push([p.at[0] - p.size[0] / 2, p.at[1] - p.size[1] / 2, p.at[2] - p.size[2] / 2]);
+        pts.push([p.at[0] + p.size[0] / 2, p.at[1] + p.size[1] / 2, p.at[2] + p.size[2] / 2]);
+        break;
+      case 'actuator':
+        pts.push(p.retracted, p.extended);
+        break;
+      case 'presence':
+        pts.push(p.from, p.to);
+        break;
+      case 'indicator':
+        pts.push(p.at);
+        break;
+    }
+  }
+  const min = [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i])));
+  const max = [0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])));
+  const center: Vec3 = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
+  const radius = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2;
+  return { center, radius };
 }
 
 /* ---------------- Running a station against a TwinIO ---------------- */

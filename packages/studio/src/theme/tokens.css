@@ -83,5 +83,24 @@
   /* --- Twin scene (Phase 8) ---------------------------------------------------------
      Reserved for the Twin scene session (docs/parallel-twin-plan.md): it adds its
      colours and sizes between these two lines, and nothing else in this file. */
+  /* 3D materials read these through twin/colors.ts. */
+  --twin-sky: #2b303b; /* viewport background behind the floor */
+  --twin-floor: #6b7180; /* mid-grey floor (SPEC 10.1) */
+  --twin-frame: #8b95a8; /* belt frame, legs, gantry */
+  --twin-belt: #262a33; /* belt surface */
+  --twin-steel: #a9b2c3; /* stop gate, table, rods */
+  --twin-pusher: var(--focus);
+  --twin-seal-head: var(--accent);
+  --twin-box: #c4935a; /* cardboard */
+  --twin-beam-clear: var(--info); /* sensor beam, nothing inside */
+  --twin-beam-blocked: var(--warn); /* sensor beam, something inside */
+  --twin-lamp-off: #3a4153;
+  --twin-lamp-on: var(--warn);
+  /* sizes */
+  --twin-toolbar-h: 32px;
+  --twin-panel-w: var(--w-inspector);
+  --twin-switch-w: 26px;
+  --twin-switch-h: 14px;
+  --twin-lamp: 10px;
   /* --- end of Twin scene --- */
 }
