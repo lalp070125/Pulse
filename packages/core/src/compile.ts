@@ -534,6 +534,12 @@ export function compileProject(project: Project): CompiledProject {
                 : null;
         return { kind, type, text: valueText(v), ev: () => v };
       }
+      case 'todo':
+        warn(
+          scope.where,
+          `is still a placeholder ("TO DO"): it stays false until its rule is built`,
+        );
+        return { kind: 'bool', type: { kind: 'bool' }, text: 'TO DO', ev: () => false };
       case 'rising':
       case 'falling':
       case 'changed': {

@@ -94,7 +94,9 @@ export type Expr =
   | { op: 'inState'; machine: string; state: string }
   | { op: 'timerDone'; timer: TimerRef }
   | { op: 'timerRunning'; timer: TimerRef }
-  | { op: 'timerElapsed'; timer: TimerRef };
+  | { op: 'timerElapsed'; timer: TimerRef }
+  /** A placeholder term made by Construct Machine (SPEC 6.3): always false, flagged "to do". */
+  | { op: 'todo' };
 
 const refTerm = <T extends string>(op: T) =>
   z.object({ op: z.literal(op), ref: VarRefSchema }).strict();
@@ -126,6 +128,7 @@ export const ExprSchema: z.ZodType<Expr> = z.lazy(() =>
     timerTerm('timerDone'),
     timerTerm('timerRunning'),
     timerTerm('timerElapsed'),
+    z.object({ op: z.literal('todo') }).strict(),
   ]),
 );
 
@@ -366,11 +369,93 @@ export const MachineSchema = z
   .strict();
 export type Machine = z.infer<typeof MachineSchema>;
 
-/** Canvas layout only (positions). Written by the Planner in Phase 3. */
+/**
+ * Where a drawn wire's condition comes from: a condition instance of the machine, or a
+ * placeholder name that Construct Machine will turn into a real condition.
+ */
+export const PlanCondSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('instance'), id: IdSchema }).strict(),
+  z.object({ kind: z.literal('placeholder'), name: NameSchema }).strict(),
+]);
+export type PlanCond = z.infer<typeof PlanCondSchema>;
+
+/**
+ * The drawing of one machine (SPEC 6.3), stored in plan.json.
+ *
+ * Positions, the machine box and the drawing-only junctions, plus every PLACEHOLDER:
+ * states, wires, Init, abort and interrupt blocks that cannot run yet because something
+ * behind them does not exist or is not chosen. Anything fully real lives in machine.json.
+ * The engine and the validator never read this file (SPEC 5.1).
+ */
 export const PlanSchema = z
   .object({
     machine: IdSchema,
+    /** The machine box on the canvas. Missing: placed automatically. */
+    box: z
+      .object({
+        x: z.number(),
+        y: z.number(),
+        w: z.number().positive(),
+        h: z.number().positive(),
+        collapsed: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    /** Positions of state nodes (real or placeholder), relative to the machine box. */
     nodes: z.array(z.object({ id: IdSchema, x: z.number(), y: z.number() }).strict()),
+    placeholders: z
+      .object({
+        /** State nodes with no state template behind them yet. */
+        states: z.array(z.object({ id: IdSchema, name: NameSchema }).strict()),
+        /** Init points at a placeholder state (machine.initial stays null until it is real). */
+        initial: IdSchema.nullable(),
+        transitions: z.array(
+          z
+            .object({
+              id: IdSchema,
+              from: IdSchema,
+              to: IdSchema,
+              priority: z.number().int().min(1),
+              condition: PlanCondSchema.nullable(),
+            })
+            .strict(),
+        ),
+        aborts: z.array(
+          z
+            .object({
+              id: IdSchema,
+              condition: PlanCondSchema.nullable(),
+              to: IdSchema.nullable(),
+            })
+            .strict(),
+        ),
+        interrupts: z.array(
+          z
+            .object({
+              id: IdSchema,
+              trigger: PlanCondSchema.nullable(),
+              resume: PlanCondSchema.nullable(),
+              onHold: z.array(ActionSchema),
+            })
+            .strict(),
+        ),
+      })
+      .strict()
+      .optional(),
+    /** Drawing-only wire junctions (H / V combiners, expanders). No effect on the logic. */
+    junctions: z
+      .array(
+        z
+          .object({
+            id: IdSchema,
+            kind: z.enum(['h', 'v', 'exp']),
+            x: z.number(),
+            y: z.number(),
+            wires: z.array(IdSchema),
+          })
+          .strict(),
+      )
+      .optional(),
   })
   .strict();
 export type Plan = z.infer<typeof PlanSchema>;
