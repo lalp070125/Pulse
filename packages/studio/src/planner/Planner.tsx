@@ -57,6 +57,7 @@ import {
   setInit,
   type BlockSlot,
   type JunctionKind,
+  type LiveMachine,
   type Project,
 } from '@pulso/core';
 import { newId } from '../lib/ulid';
@@ -89,6 +90,8 @@ import {
   type WireData,
 } from './parts';
 import { usePlanner } from './store';
+import { lastCondition, useLive, type CondResult, type LastTransition } from '../state/live';
+import { useMonitor } from '../monitor/store';
 import './planner.css';
 
 /* ----------------------------------------------------------------------------
@@ -391,7 +394,8 @@ function machineOfNode(n: Node | undefined): string | null {
 
 /* --- the canvas -------------------------------------------------------------------------- */
 
-function Canvas() {
+/** The canvas. `live`: read-only, lit by the running machines (Monitor, SPEC 7.1). */
+export function Canvas({ live = false }: { live?: boolean }) {
   const project = useProject((s) => s.project)!;
   const flow = useReactFlow();
   const focus = usePlanner((s) => s.focus);
@@ -417,6 +421,25 @@ function Canvas() {
   const edges = useMemo(
     () => buildEdges(project, nodes, selectedEdges),
     [project, nodes, selectedEdges],
+  );
+
+  // Live mode: light the active states, tag held / faulted machines, flash the last
+  // transition, and give every wire its condition's live term values.
+  const liveMachines = useLive((s) => s.machines);
+  const lastTransition = useLive((s) => s.lastTransition);
+  const liveTick = useLive((s) => s.tick);
+  const highlight = useMonitor((s) => s.highlight);
+  const monFocus = useMonitor((s) => s.focus);
+  const shownNodes = useMemo(
+    () =>
+      live ? decorateNodes(project, nodes, liveMachines, highlight, monFocus?.node ?? null) : nodes,
+    [live, project, nodes, liveMachines, highlight, monFocus],
+  );
+  const shownEdges = useMemo(
+    () => (live ? decorateEdges(project, edges, lastTransition) : edges),
+    // liveTick: wire tooltips follow the newest condition results.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [live, project, edges, lastTransition, liveTick],
   );
 
   // Click-to-go from the Messages panel: show the item (or the whole machine) and select it.
@@ -597,6 +620,7 @@ function Canvas() {
   );
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (live) return;
     if ((e.target as HTMLElement).closest('input, textarea, select')) return;
     const ctrl = e.ctrlKey || e.metaKey;
     const key = e.key.toLowerCase();
@@ -611,13 +635,17 @@ function Canvas() {
   };
 
   return (
-    <PlannerCtx.Provider value={actions}>
-      <Toolbar
-        onDelete={() => deleteSelected(nodesRef.current, edges)}
-        onJunction={(k) => junction(k, edges)}
-        minimap={minimap}
-        onMinimap={() => setMinimap(!minimap)}
-      />
+    <PlannerCtx.Provider value={live ? LIVE_ACTIONS : actions}>
+      {live ? (
+        <LiveToolbar minimap={minimap} onMinimap={() => setMinimap(!minimap)} />
+      ) : (
+        <Toolbar
+          onDelete={() => deleteSelected(nodesRef.current, edges)}
+          onJunction={(k) => junction(k, edges)}
+          minimap={minimap}
+          onMinimap={() => setMinimap(!minimap)}
+        />
+      )}
       <div
         className="pl-canvas"
         ref={wrap}
@@ -641,18 +669,31 @@ function Canvas() {
           </defs>
         </svg>
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={shownNodes}
+          edges={shownEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onNodeDragStop={onDragStop}
-          onConnect={onConnect}
+          onNodeDragStop={live ? undefined : onDragStop}
+          onConnect={live ? undefined : onConnect}
           isValidConnection={isValidConnection}
+          nodesDraggable={!live}
+          nodesConnectable={!live}
           onNodeClick={(_, n) => {
             const m = machineOfNode(n);
-            if (m) usePlanner.getState().setMachine(m);
+            if (!m) return;
+            if (!live) return usePlanner.getState().setMachine(m);
+            // Live: a state click fills the waveform with that state's signals (SPEC 7.2).
+            if (n.type === 'state') {
+              const entry = project.machines.find((e) => e.machine.id === m);
+              useMonitor.getState().setFocus({
+                machine: m,
+                machineName: entry?.machine.name ?? '',
+                node: n.id,
+                nodeName: (n.data as { name: string }).name,
+              });
+            }
           }}
           deleteKeyCode={null}
           elevateNodesOnSelect={false}
@@ -688,10 +729,137 @@ function Canvas() {
           {minimap && <MiniMap pannable zoomable className="pl-minimap" />}
         </ReactFlow>
       </div>
-      {menu && <MachineMenu {...menu} onClose={() => setMenu(null)} />}
-      <ConditionChooser />
-      <HoldActionsDialog />
+      {!live && menu && <MachineMenu {...menu} onClose={() => setMenu(null)} />}
+      {!live && <ConditionChooser />}
+      {!live && <HoldActionsDialog />}
     </PlannerCtx.Provider>
+  );
+}
+
+/** Nothing on the live plan edits the project. */
+const LIVE_ACTIONS: PlannerActions = {
+  machineMenu: () => undefined,
+  toggleCollapse: () => undefined,
+  resizeBox: () => undefined,
+  chooseBlock: () => undefined,
+  openHold: () => undefined,
+  chooseWire: () => undefined,
+  renumberWire: () => undefined,
+  selectWire: () => undefined,
+};
+
+function decorateNodes(
+  project: Project,
+  nodes: Node[],
+  machines: LiveMachine[],
+  highlight: { machine: string; state: string | null; nonce: number } | null,
+  focusNode: string | null,
+): Node[] {
+  const nameOf = new Map(project.machines.map((e) => [e.machine.id, e.machine.name]));
+  const byName = new Map(machines.map((m) => [m.name, m]));
+  return nodes.map((n) => {
+    const d = n.data as { machine: string; name: string };
+    const mName = nameOf.get(d.machine) ?? '';
+    const m = byName.get(mName);
+    if (n.type === 'state') {
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          live: {
+            active: m?.state === d.name,
+            held: m?.state === d.name && m.held,
+            faulted: m?.state === d.name && m.faulted,
+            lit: highlight?.machine === mName && highlight.state === d.name,
+            focused: focusNode === n.id,
+          },
+        },
+      };
+    }
+    if (n.type === 'machine') {
+      const tag = m?.faulted ? 'FAULT' : m?.held ? 'HELD' : null;
+      return { ...n, data: { ...n.data, tag } };
+    }
+    return n;
+  });
+}
+
+function termsText(r: CondResult | undefined): string {
+  if (!r) return 'not evaluated yet';
+  const terms = r.terms.map((t) => `${t.text} = ${JSON.stringify(t.value)}`).join('\n');
+  return `${r.name} = ${r.result}\n${terms}`;
+}
+
+function decorateEdges(
+  project: Project,
+  edges: Edge<WireData>[],
+  last: Record<string, LastTransition>,
+): Edge<WireData>[] {
+  const nameOf = new Map(project.machines.map((e) => [e.machine.id, e.machine.name]));
+  return edges.map((e) => {
+    const d = e.data!;
+    const mName = nameOf.get(d.machine) ?? '';
+    if (d.kind === 'wire') {
+      const [from, to] = d.ends.split('-');
+      const t = last[mName];
+      const r = lastCondition(mName, `transition ${d.wire}`);
+      return {
+        ...e,
+        data: {
+          ...d,
+          flash: t && t.from === from && t.to === to ? t.seq : undefined,
+          liveText: termsText(r),
+          liveResult: r?.result,
+        },
+      };
+    }
+    if (d.kind === 'abort') {
+      const r = lastCondition(mName, `abort ${e.id.slice('e-abort:'.length)}`);
+      return { ...e, data: { ...d, liveText: termsText(r), liveResult: r?.result } };
+    }
+    return e;
+  });
+}
+
+/** The live plan's toolbar: only viewing tools. */
+function LiveToolbar({ minimap, onMinimap }: { minimap: boolean; onMinimap: () => void }) {
+  const flow = useReactFlow();
+  const { zoom } = useViewport();
+  const deployedAt = useLive((s) => s.deployedAt);
+  const replay = useLive((s) => s.replay);
+  return (
+    <div className="pl-toolbar" role="toolbar" aria-label="Live plan tools">
+      <span className="pl-live-title">Live plan</span>
+      <span className="muted mono pl-live-note">
+        {replay
+          ? `recorded session ${replay}`
+          : deployedAt
+            ? `deployed ${new Date(deployedAt).toLocaleTimeString()}`
+            : 'nothing deployed yet'}
+      </span>
+      <span className="spacer" />
+      <button
+        type="button"
+        className={`tool ${minimap ? 'on' : ''}`}
+        aria-pressed={minimap}
+        title="Minimap"
+        aria-label="Minimap"
+        onClick={onMinimap}
+      >
+        <MapIcon {...ICON} />
+      </button>
+      <button
+        type="button"
+        className="tool"
+        title="Fit to view"
+        aria-label="Fit to view"
+        data-testid="live-fit"
+        onClick={() => void flow.fitView({ padding: 0.15, duration: 200 })}
+      >
+        <Maximize {...ICON} />
+      </button>
+      <span className="pl-zoom mono">{Math.round(zoom * 100)}%</span>
+    </div>
   );
 }
 

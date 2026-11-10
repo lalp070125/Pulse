@@ -36,12 +36,6 @@ export interface HealthInfo {
   project: string | null;
 }
 
-/** Messages the runtime sends over the live WebSocket (/ws). Grows in Phase 4. */
-export type ServerMessage = { type: 'hello'; product: string; version: string } | { type: 'pong' };
-
-/** Messages the UI sends over the live WebSocket (/ws). */
-export type ClientMessage = { type: 'ping' };
-
 export * from './types';
 export * from './schema';
 export * from './files';
@@ -52,3 +46,5 @@ export * from './engine';
 export * from './catalog';
 export * from './validate';
 export * from './planner';
+export * from './live';
+export * from './focus';

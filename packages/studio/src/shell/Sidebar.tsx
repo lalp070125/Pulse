@@ -39,6 +39,13 @@ import {
   showUsages,
 } from '../state/entities';
 import { sidebarTitle, treeFor, type TreeIcon, type TreeNode } from './treeData';
+import { useMonitor, type MonitorPart } from '../monitor/store';
+
+const MONITOR_PARTS: Record<string, MonitorPart> = {
+  'mon.plan': 'plan',
+  'mon.signals': 'wave',
+  'mon.log': 'log',
+};
 
 const ICONS: Record<TreeIcon, LucideIcon> = {
   target: Server,
@@ -158,6 +165,14 @@ export function Sidebar() {
     if (node.group) toggle(node.id);
     if (node.entity) {
       openEditor(node.entity.kind, node.entity.id);
+      return;
+    }
+    // Live Plan, Waveform Monitor and Event Log are three parts of one Monitor tab (SPEC 7):
+    // a click in one moves the others, so they are shown together.
+    const part = MONITOR_PARTS[node.id];
+    if (app === 'studio' && part) {
+      shell.openTab({ id: 'doc:monitor', title: 'Monitor', closable: true, note: '' });
+      useMonitor.getState().showPart(part);
       return;
     }
     // Studio opens a document tab for the node; Panel and Twin have fixed tabs.

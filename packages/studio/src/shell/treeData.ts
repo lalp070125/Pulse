@@ -62,7 +62,7 @@ const PLAN: TreeNode[] = [
       { id: 'target.twin', label: 'Twin', icon: 'twin', phase: 8 },
     ],
   },
-  { id: 'routing', label: 'Routing', icon: 'routing', hint: 'bus manager', group: true, phase: 2 },
+  { id: 'routing', label: 'Routing', icon: 'routing', hint: 'bus manager', phase: 2 },
   {
     id: 'library',
     label: 'Library',
@@ -83,10 +83,10 @@ const PLAN: TreeNode[] = [
 ];
 
 const MONITOR: TreeNode[] = [
-  { id: 'mon.plan', label: 'Live Plan', icon: 'monitor', phase: 4 },
-  { id: 'mon.signals', label: 'Waveform Monitor', icon: 'wave', phase: 4 },
-  { id: 'mon.log', label: 'Event Log', icon: 'log', phase: 4 },
-  { id: 'mon.inspect', label: 'Inspectors', icon: 'folder', hint: 'timers, queues', phase: 4 },
+  { id: 'mon.plan', label: 'Live Plan', icon: 'monitor' },
+  { id: 'mon.signals', label: 'Waveform Monitor', icon: 'wave' },
+  { id: 'mon.log', label: 'Event Log', icon: 'log' },
+  { id: 'mon.inspect', label: 'Inspectors', icon: 'folder', hint: 'timers, queues' },
 ];
 
 const TEST: TreeNode[] = [
@@ -120,7 +120,7 @@ const PANEL: TreeNode[] = [
 const TWIN: TreeNode[] = [
   {
     id: 't.models',
-    label: 'Models Library',
+    label: 'Part Library',
     icon: 'model',
     group: true,
     startOpen: true,
@@ -128,7 +128,7 @@ const TWIN: TreeNode[] = [
   },
   {
     id: 't.instances',
-    label: 'Instances',
+    label: 'Placed Parts',
     icon: 'equipment',
     group: true,
     startOpen: true,

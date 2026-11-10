@@ -3,14 +3,19 @@ import { ConditionsEditor } from './ConditionsEditor';
 import { EquipmentEditor } from './EquipmentEditor';
 import { StatesEditor } from './StatesEditor';
 import { MachinesEditor } from './MachinesEditor';
+import { RoutingEditor } from './RoutingEditor';
 import { GlobalsEditor } from './GlobalsEditor';
 import { InterfacesEditor } from './InterfacesEditor';
 import { PlannerEditor } from '../planner/Planner';
 import { twinEditorForTab } from '../twin';
+import { MonitorView } from '../monitor/Monitor';
+import { InspectorsView } from '../monitor/Inspectors';
 
 /** The editor that belongs to an open tab (ids look like `doc:lib.globals`), or null if none yet. */
 export function editorForTab(tabId: string): ReactNode | null {
   switch (tabId) {
+    case 'doc:routing':
+      return <RoutingEditor />;
     case 'doc:lib.globals':
       return <GlobalsEditor />;
     case 'doc:lib.interfaces':
@@ -26,6 +31,10 @@ export function editorForTab(tabId: string): ReactNode | null {
     case 'twin:station':
     case 'twin:line':
       return twinEditorForTab(tabId);
+    case 'doc:monitor':
+      return <MonitorView />;
+    case 'doc:mon.inspect':
+      return <InspectorsView />;
     case 'doc:planner':
       return <PlannerEditor />;
     default:

@@ -70,6 +70,8 @@ export interface VarInfo {
   owner: VarOwner;
   /** Machine ID for signals; null for globals. */
   machine: string | null;
+  /** The ID-based reference to this variable (what a routing row stores). */
+  ref: ConcreteVarRef;
 }
 
 export interface CExpr {
@@ -217,6 +219,7 @@ export function compileProject(project: Project): CompiledProject {
         initial: bad ? defaultValue(g.type) : g.default,
         owner: 'global',
         machine: null,
+        ref: { kind: 'global', global: g.id },
       },
       where,
     );
@@ -271,6 +274,7 @@ export function compileProject(project: Project): CompiledProject {
               initial: okDefault ? (s.default as Value) : defaultValue(s.type),
               owner: s.direction,
               machine: m.id,
+              ref: { kind: 'signal', instance: inst.id, interface: iface.id, signal: s.id },
             },
             `${where} › instance '${inst.name}'`,
           );

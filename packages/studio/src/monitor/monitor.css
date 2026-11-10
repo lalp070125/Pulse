@@ -1,0 +1,212 @@
+/* Monitor tab (SPEC 7). Every colour and size comes from tokens.css. */
+.monitor {
+  width: 100%;
+  height: 100%;
+  align-self: stretch;
+  background: var(--bg-0);
+}
+.monitor-plan {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.monitor-handle-v {
+  width: 4px;
+  background: var(--border);
+}
+.monitor-handle-h {
+  height: 4px;
+  background: var(--border);
+}
+.evlog,
+.wave {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-1);
+  font-size: var(--fs-xs);
+}
+.evlog-bar,
+.wave-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--pad);
+  border-bottom: 1px solid var(--border);
+}
+.evlog-types {
+  display: inline-flex;
+  gap: 6px;
+}
+.evlog-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+}
+.evlog-filter {
+  width: 140px;
+}
+.log-start.on {
+  color: var(--ok);
+}
+.evlog-cols,
+.evlog-row {
+  display: grid;
+  grid-template-columns: 110px 64px 80px 80px 1fr;
+  gap: var(--pad);
+  padding: 0 var(--pad);
+  align-items: center;
+}
+.evlog-cols {
+  height: var(--h-msg-row);
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+}
+.evlog-body {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+.evlog-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 22px;
+  color: var(--text-2);
+  cursor: pointer;
+  border-bottom: 1px solid var(--bg-2);
+}
+.evlog-row:hover,
+.evlog-row.selected {
+  background: var(--bg-3);
+}
+.evlog-text {
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.evlog-foot,
+.wave-foot {
+  display: flex;
+  gap: 16px;
+  height: 22px;
+  align-items: center;
+  padding: 0 var(--pad);
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+}
+.ok-text {
+  color: var(--ok);
+}
+.ev-chip {
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  color: var(--bg-0);
+  font-weight: 700;
+}
+.ev-action {
+  background: var(--ev-action);
+}
+.ev-trans {
+  background: var(--ev-trans);
+}
+.ev-cond {
+  background: var(--ev-cond);
+}
+.ev-logic {
+  background: var(--ev-logic);
+}
+.ev-inject {
+  background: var(--ev-inject);
+}
+.ev-bus {
+  background: var(--ev-bus);
+}
+.ev-set {
+  background: var(--text-2);
+}
+.ev-fault {
+  background: var(--err);
+  color: var(--text-on-fill);
+}
+.wave-title {
+  font-weight: 600;
+  color: var(--text-1);
+}
+.wave-pin {
+  max-width: 200px;
+}
+.wave-sessions {
+  position: relative;
+}
+.wave-session-list {
+  position: absolute;
+  right: 0;
+  top: 26px;
+  z-index: 20;
+  max-height: 300px;
+  overflow: auto;
+}
+.wave-main {
+  flex: 1;
+  display: flex;
+  overflow: auto;
+  min-height: 0;
+}
+.wave-names {
+  width: 280px;
+  flex: none;
+  border-right: 1px solid var(--border);
+}
+.wave-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--grid-line);
+}
+.wave-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+.wave-value {
+  min-width: 48px;
+  text-align: right;
+  color: var(--text-1);
+}
+.wave-plot {
+  flex: 1;
+  min-width: 0;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Inspectors tab */
+.insp-title {
+  margin: 16px 0 6px;
+  font-size: var(--fs-md);
+  color: var(--text-2);
+  font-weight: 500;
+}
+.insp-none {
+  padding: 6px 8px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+[data-testid='insp-timers'] [data-state='ok'],
+[data-testid='insp-timing'] [data-state='ok'] {
+  color: var(--ok);
+}
+[data-testid='insp-timers'] [data-state='off'] {
+  color: var(--text-3);
+}
+[data-testid='insp-timing'] [data-state='warn'] {
+  color: var(--warn);
+}
