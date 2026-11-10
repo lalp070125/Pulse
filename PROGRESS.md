@@ -6,6 +6,8 @@ SPEC section 14 now lists the phases in this order: 0, 1, 2, 3, 4, **8**, 5, 6, 
 
 **Reason:** the owner's goal is a 3D twin with real physics, runtime streaming and the Line Builder, running the box closing machine (`docs/box-closing-machine-design.md`). So Phase 4 (runtime, streaming, Monitor) comes next, then Phase 8 (Twin), before tests, logic blocks and the Panel.
 
+**Approved exception to "one phase at a time" (owner, 2026-11-10):** the 3D scene part of Phase 8 may be built in parallel with Phase 4, by a second Claude session on its own branch, after Phase 3 is merged (done). Not started: waiting for the owner's approval of the parallel-work plan.
+
 **Dependencies to settle when Phase 8 starts (flagged, not decided):**
 
 - Phase 8 acceptance switches routing from Sim to Twin. The Routing (bus manager) editor of SPEC 6.2 is not listed in any phase.
