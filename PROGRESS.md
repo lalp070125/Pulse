@@ -16,13 +16,11 @@ Branch: `phase-2-library-editors`
 - Validator problems in the Messages panel: live rows (Time shows "live", Source "Validator"), counted in the level pills, filterable, copied with Copy, not removed by Clear; click (or Enter) opens the editor and lights the item. Machine card got a description field. Browser test in `e2e/library.spec.ts`.
 - Acceptance check (`e2e/rebuild-seed.spec.ts`): from an empty project, the whole Sealer library and machine is rebuilt by clicking only (5 interfaces, 4 equipment types with simulation, 5 globals, 8 conditions incl. the PusherStuck alarm, 6 states with their actions, the machine with 5 instances, 2 timers, 6 states, 8 conditions, all 20 bindings). The saved project equals `projects/box-sealer-demo` once IDs are replaced by names. **Excluded:** Init, transitions, abort and interrupt (Planner, Phase 3); the validator correctly reports the one remaining problem, "the Init node is not connected to a first state".
 
+## Carried to Phase 3 (owner decision, 2026-11-09)
+
+- Phase 2 accepted without state wiring. **The Phase 3 acceptance must also finish the Sealer rebuild** in `e2e/rebuild-seed.spec.ts`: draw Init, the transitions, the PusherStuck abort and the Stop/Start interrupt in the Planner, and compare them with the seed too (no temporary way to enter them in Phase 2).
+
 ## Status
 
 Phase 2 complete, waiting for the owner's confirmation before merging.
-Known: in 2 of 9 full browser-test runs a test timed out (different test each time, machine under heavy load); the other 7 runs were fully green. Cause not proven.
-
-## Not in this phase (by the spec)
-
-- Routing editor (it is not in the Phase 2 list)
-- Wiring transitions, Init, abort and interrupt blocks: that is the Planner canvas (Phase 3)
-- Logic blocks and queues (Phase 6)
+Browser-test timeouts: 2 of the first 9 full runs had one timeout each (different test each time). Afterwards, 8 full runs in a row were green (load 4–5 on 2 CPUs), and a run under deliberate 3x CPU overload was 2.5x slower but still passing until it was stopped. No source edit or Vite dependency rebuild happened during the failing runs, so there is no sign of a page reload. The timeouts were not reproduced; no app fault was found, but the cause is not proven either.
