@@ -6,6 +6,7 @@ import { MachinesEditor } from './MachinesEditor';
 import { GlobalsEditor } from './GlobalsEditor';
 import { InterfacesEditor } from './InterfacesEditor';
 import { PlannerEditor } from '../planner/Planner';
+import { twinEditorForTab } from '../twin';
 
 /** The editor that belongs to an open tab (ids look like `doc:lib.globals`), or null if none yet. */
 export function editorForTab(tabId: string): ReactNode | null {
@@ -22,6 +23,9 @@ export function editorForTab(tabId: string): ReactNode | null {
       return <StatesEditor />;
     case 'doc:machines':
       return <MachinesEditor />;
+    case 'twin:station':
+    case 'twin:line':
+      return twinEditorForTab(tabId);
     case 'doc:planner':
       return <PlannerEditor />;
     default:

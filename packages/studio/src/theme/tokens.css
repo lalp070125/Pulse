@@ -79,4 +79,9 @@
   --block-row-h: 84px;
   --block-w: 128px;
   --wire-lane: 14px; /* gap between side lanes of back wires */
+
+  /* --- Twin scene (Phase 8) ---------------------------------------------------------
+     Reserved for the Twin scene session (docs/parallel-twin-plan.md): it adds its
+     colours and sizes between these two lines, and nothing else in this file. */
+  /* --- end of Twin scene --- */
 }

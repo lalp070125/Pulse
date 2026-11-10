@@ -638,7 +638,7 @@ Everything in 6.3 including placeholders, Construct Machine, priorities, back-wi
 *Accept*: draw the two-machine demo from placeholders, construct it, save, and the engine runs it.
 
 **Phase 4 — Runtime and Monitor**
-Tick loop with per-machine cycle time, WebSocket streaming, Deploy/Start/Stop/Step, live plan, focused signals, waveform monitor with cursor and forcing, event log viewer, session files, timing figures.
+Tick loop with per-machine cycle time, WebSocket streaming, Deploy/Start/Stop/Step, live plan, focused signals, waveform monitor with cursor and forcing, event log viewer, session files, timing figures, Routing (bus manager) editor (6.2).
 *Accept*: start the demo, watch states light up, force `BoxAtStop` from the chart, read why a transition did not fire from the log.
 
 **Phase 8 — Pulso Twin**
