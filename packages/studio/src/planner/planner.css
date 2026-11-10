@@ -65,6 +65,8 @@
   min-height: 0;
   position: relative;
   outline: none;
+  touch-action: none; /* fingers move and zoom the drawing, never the page */
+  overscroll-behavior: contain;
 }
 .pl-canvas .react-flow__edgelabel-renderer {
   /* Badges and labels sit above every wire and every node, machine boxes included. */
@@ -139,6 +141,15 @@
 }
 
 /* --- machine box ------------------------------------------------------------------- */
+/* Only the header bar and the resize handles of a box catch the pointer. The rest lets touches
+   and clicks through to the canvas, so a pinch, a pan or a selection box can start anywhere. */
+.pl-canvas .react-flow__node-machine {
+  pointer-events: none !important;
+}
+.pl-machine-head,
+.pl-canvas .react-flow__node-machine .react-flow__resize-control {
+  pointer-events: all;
+}
 .pl-machine {
   width: 100%;
   height: 100%;
@@ -463,4 +474,31 @@
   padding: var(--pad);
   max-height: 60vh;
   overflow: auto;
+}
+
+/* --- touch screens: finger-sized targets ------------------------------------------- */
+@media (pointer: coarse) {
+  .pl-port.react-flow__handle {
+    width: 18px;
+    height: 18px;
+    border-width: 2px;
+  }
+  .pl-badge {
+    width: 26px;
+    height: 26px;
+    font-size: var(--fs-sm);
+  }
+  .pl-chip {
+    height: 26px;
+    max-width: 200px;
+    font-size: var(--fs-sm);
+  }
+  .pl-slot {
+    height: 28px;
+    font-size: var(--fs-sm);
+  }
+  .pl-hold {
+    padding: 2px 8px;
+    font-size: var(--fs-xs);
+  }
 }

@@ -19,6 +19,15 @@ Branch: `phase-3-planner-canvas`
 
 `e2e/acceptance-phase3.spec.ts`: in an empty project, the Sealer and Infeed machines are drawn from placeholders only, constructed (the second Construct reuses StartPressed), their skeletons filled in with the Phase 2 editors, saved, and the engine runs both: Start → Sealer Feed / Infeed Gap; after the 500 ms gap Infeed is in Handover; a box arrives → Sealer Push, and Infeed sees `inState(Sealer, Push)` and goes back to Gap; the cycle continues into Seal.
 
+### Phone (owner request 2026-11-10, within SPEC 4.1: desktop layout, scaled)
+
+- Touch screens: one finger on empty canvas pans, two fingers pan and zoom the drawing (this did not work before: the desktop pan setting switched off all touch pan and zoom, and a pinch that started on a machine box was ignored). Only a box's header bar and resize handles catch touches now.
+- Finger-sized dots, badges, labels and slots on touch screens; a wire end snaps to a dot from further away.
+- **Full screen** button in the Planner toolbar: hides the side panels and Messages, fits the drawing; press again to bring them back.
+- Safari's own page zoom is blocked on the canvas (`touch-action: none` and Safari gesture events). **Not verified on a real iPhone**: the test browser here (Chromium with the iPhone 16 Pro Max profile) does no page zoom, so this can only be confirmed on the phone.
+- Browser test `e2e/phone.spec.ts`: full screen, two-finger zoom, dot size, a wire drawn by touch.
+- On touch screens there is no box-select (one finger pans instead).
+
 ### Decisions recorded
 
 - The demo's Infeed and Sealer coordinate through `inState(...)` (and globals). **The `ToSealer` queue of SPEC 12 comes in Phase 6** with queues. The seed project is unchanged.

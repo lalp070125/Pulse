@@ -16,8 +16,10 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
+  Expand,
   Map as MapIcon,
   Maximize,
+  Shrink,
   Plus,
   Redo2,
   Save,
@@ -102,6 +104,8 @@ const machineNodeId = (m: string) => `m:${m}`;
 const blockNodeId = (slot: BlockSlot, machine: string, block: string | null) =>
   `b:${slot}:${block ?? `new-${machine}`}`;
 const INIT_W = 52;
+/** A touch screen (finger, not mouse): bigger targets, a wider snap for wire ends. */
+const TOUCH = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
 /* --- building the drawing from the project --------------------------------------------- */
 
@@ -434,6 +438,24 @@ function Canvas() {
 
   const act = usePlanner((s) => s.act);
 
+  // On a phone, a pinch on the canvas must zoom the drawing, not the whole page (Safari's own
+  // gesture events and two-finger moves are stopped here; the canvas zooms itself).
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const stop = (e: Event) => e.preventDefault();
+    const twoFingers = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault();
+    };
+    for (const g of ['gesturestart', 'gesturechange', 'gestureend']) el.addEventListener(g, stop);
+    el.addEventListener('touchmove', twoFingers, { passive: false });
+    return () => {
+      for (const g of ['gesturestart', 'gesturechange', 'gestureend'])
+        el.removeEventListener(g, stop);
+      el.removeEventListener('touchmove', twoFingers);
+    };
+  }, []);
+
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     // Removal is handled by deleteSelected (it knows what each thing is); everything else is local until drop.
     setNodes((prev) =>
@@ -637,9 +659,13 @@ function Canvas() {
           zoomOnDoubleClick={false}
           snapToGrid
           snapGrid={[G.grid, G.grid]}
-          selectionOnDrag
-          panOnDrag={[1, 2]}
+          // Mouse: left-drag on empty canvas draws a selection box; middle/right drag or Space pans.
+          // Touch: one finger on empty canvas pans, two fingers pan and zoom (the canvas library
+          // only handles touch when drag-to-pan is fully on).
+          selectionOnDrag={!TOUCH}
+          panOnDrag={TOUCH ? true : [1, 2]}
           panActivationKeyCode="Space"
+          connectionRadius={TOUCH ? 44 : 20}
           minZoom={0.2}
           maxZoom={2.5}
           fitView
@@ -795,6 +821,7 @@ function Toolbar({
       >
         <MapIcon {...ICON} />
       </button>
+      <FullScreenButton />
       <button
         type="button"
         className="tool"
@@ -809,6 +836,48 @@ function Toolbar({
         {Math.round(zoom * 100)}%
       </span>
     </div>
+  );
+}
+
+/** Hides the side panels and Messages so the canvas gets the whole screen; again to bring them back. */
+let panelsBefore: { sidebarOpen: boolean; inspectorOpen: boolean; bottomOpen: boolean } | null =
+  null;
+function FullScreenButton() {
+  const flow = useReactFlow();
+  const full = useShell((s) => !s.sidebarOpen && !s.inspectorOpen && !s.bottomOpen);
+  const toggle = () => {
+    const s = useShell.getState();
+    if (full) {
+      useShell.setState(
+        panelsBefore ?? { sidebarOpen: true, inspectorOpen: true, bottomOpen: true },
+      );
+      panelsBefore = null;
+    } else {
+      panelsBefore = {
+        sidebarOpen: s.sidebarOpen,
+        inspectorOpen: s.inspectorOpen,
+        bottomOpen: s.bottomOpen,
+      };
+      useShell.setState({ sidebarOpen: false, inspectorOpen: false, bottomOpen: false });
+    }
+    window.setTimeout(() => void flow.fitView({ padding: 0.1, duration: 200 }), 120);
+  };
+  return (
+    <button
+      type="button"
+      className={`tool ${full ? 'on' : ''}`}
+      aria-pressed={full}
+      title={
+        full
+          ? 'Show the side panels and Messages again'
+          : 'Full screen: hide the side panels and Messages'
+      }
+      aria-label={full ? 'Leave full screen' : 'Full screen'}
+      data-testid="planner-fullscreen"
+      onClick={toggle}
+    >
+      {full ? <Shrink {...ICON} /> : <Expand {...ICON} />}
+    </button>
   );
 }
 
