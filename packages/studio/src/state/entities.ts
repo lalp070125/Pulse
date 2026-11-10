@@ -90,7 +90,8 @@ export function describeId(p: Project, id: string): string | null {
   return null;
 }
 
-function blank(p: Project, kind: EntityKind, name: string): Named {
+/** A new, empty entity of a kind (not added to the project). */
+export function blankEntity(p: Project, kind: EntityKind, name: string): Named {
   const id = newId();
   switch (kind) {
     case 'global':
@@ -138,7 +139,7 @@ export function addEntity(kind: EntityKind, name?: string): string | null {
       listOf(store.project, kind).map((e) => e.name),
       base,
     );
-  const entity = blank(store.project, kind, chosen);
+  const entity = blankEntity(store.project, kind, chosen);
   store.update((p) => {
     if (kind === 'global') p.globals.push(entity as never);
     else if (kind === 'interface') p.interfaces.push(entity as never);

@@ -1,7 +1,19 @@
 import path from 'node:path';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import type { Project } from '@pulso/core';
+import { Engine } from '@pulso/core';
 import { loadProject } from '../packages/runtime/src/store';
+import { openPlanner, setCondition, watchReloads, wire } from './helpers';
+import {
+  CONDITIONS,
+  STATES,
+  buildLibrary,
+  composeSealer,
+  createNamed,
+  fillCondition,
+  fillState,
+  openFromTree,
+} from './sealer';
 
 /* ----------------------------------------------------------------------------
  * Phase 2 acceptance (SPEC 14): the seed machine can be rebuilt from an empty
@@ -10,8 +22,8 @@ import { loadProject } from '../packages/runtime/src/store';
  * compared with /projects/box-sealer-demo, with every ID replaced by the name
  * of what it points at (IDs are random, names are what the user typed).
  *
- * Not compared: the state machine wiring (Init, transitions, abort, interrupt).
- * That is drawn on the Planner canvas, which is Phase 3.
+ * Steps 1-6 use the Phase 2 editors; step 7 draws the wiring (Init, transitions,
+ * abort, interrupt with its hold action) on the Phase 3 Planner canvas.
  * -------------------------------------------------------------------------- */
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -20,239 +32,11 @@ test.setTimeout(240_000);
 const SHOTS = 'test-results/screens';
 const SEED_DIR = path.resolve('projects/box-sealer-demo');
 
-async function openFromTree(page: Page, label: string): Promise<void> {
-  await page.getByTestId('project-tree').getByText(label, { exact: true }).click();
-}
-
-async function createNamed(page: Page, name: string): Promise<void> {
-  await page.getByTestId('editor-new').click();
-  await page.getByTestId('dialog-input').fill(name);
-  await page.getByTestId('dialog-ok').click();
-}
-
-/** Picks the item whose text is exactly `text` in the open variable picker. */
-async function pick(page: Page, text: string): Promise<void> {
-  const picker = page.getByTestId('variable-picker');
-  await picker.getByTestId('picker-search').fill(text);
-  await picker
-    .getByTestId('picker-item')
-    .filter({ has: page.getByText(text, { exact: true }) })
-    .click();
-  await expect(picker).toBeHidden();
-}
-
-type RoleSpec = [name: string, kind: 'device' | 'timer', equipment?: string];
-
-async function addRoles(card: Locator, roles: RoleSpec[]): Promise<void> {
-  for (let i = 0; i < roles.length; i++) {
-    const [name, kind, equipment] = roles[i]!;
-    await card.getByTestId('add-role').click();
-    await card.getByTestId('role-name').nth(i).fill(name);
-    const row = card.getByTestId(`role-${name}`);
-    if (kind === 'timer') await row.getByTestId('role-kind').selectOption('timer');
-    else await row.getByTestId('role-equipment').selectOption({ label: equipment! });
-  }
-}
-
-/* --- the seed, written as what a user would type --------------------------- */
-
-const INTERFACES: {
-  name: string;
-  description: string;
-  signals: [name: string, direction: 'command' | 'feedback', description?: string][];
-}[] = [
-  {
-    name: 'IMotor',
-    description: 'A motor that can be switched on and reports that it runs.',
-    signals: [
-      ['Run', 'command', 'Switch the motor on'],
-      ['Running', 'feedback', 'The motor is turning'],
-    ],
-  },
-  {
-    name: 'IFault',
-    description: 'A device that can report its own fault.',
-    signals: [['Fault', 'feedback']],
-  },
-  {
-    name: 'ISensor',
-    description: 'A presence sensor.',
-    signals: [['Present', 'feedback', 'Something is in front of the sensor']],
-  },
-  {
-    name: 'ICylinder',
-    description: 'A pneumatic cylinder with end-position sensors.',
-    signals: [
-      ['Extend', 'command', 'Push out (false = pull back)'],
-      ['Extended', 'feedback', 'Fully out'],
-      ['Retracted', 'feedback', 'Fully back'],
-    ],
-  },
-  { name: 'IIndicator', description: 'A lamp.', signals: [['On', 'command']] },
-];
-
-const GLOBALS: [name: string, type: 'bool' | 'int', description: string, unit?: string][] = [
-  ['Start', 'bool', 'Start button'],
-  ['Stop', 'bool', 'Stop button'],
-  ['Running', 'bool', 'The machine is producing'],
-  ['BoxCount', 'int', 'Boxes sealed (counting arrives with logic blocks)', 'boxes'],
-  ['FaultReset', 'bool', 'Fault reset button'],
-];
-
-type ActionSpec =
-  { eq: string; value: boolean } | { global: string; value: boolean } | { restart: string };
-
-const STATES: {
-  name: string;
-  description: string;
-  roles: RoleSpec[];
-  onEntry?: ActionSpec[];
-  steps?: ActionSpec[];
-  onExit?: ActionSpec[];
-}[] = [
-  {
-    name: 'Idle',
-    description: 'Waiting for Start. Everything off.',
-    roles: [
-      ['Conveyor', 'device', 'Motor'],
-      ['Lamp', 'device', 'Indicator'],
-    ],
-    onEntry: [
-      { eq: 'Conveyor.IMotor.Run', value: false },
-      { global: 'Running', value: false },
-      { eq: 'Lamp.IIndicator.On', value: false },
-    ],
-  },
-  {
-    name: 'Feed',
-    description: 'Conveyor runs until a box reaches the stop.',
-    roles: [
-      ['Conveyor', 'device', 'Motor'],
-      ['Lamp', 'device', 'Indicator'],
-    ],
-    onEntry: [
-      { global: 'Running', value: true },
-      { eq: 'Lamp.IIndicator.On', value: true },
-    ],
-    steps: [{ eq: 'Conveyor.IMotor.Run', value: true }],
-  },
-  {
-    name: 'Push',
-    description: 'Conveyor stops, the pusher moves the box under the seal head.',
-    roles: [
-      ['Conveyor', 'device', 'Motor'],
-      ['Pusher', 'device', 'Cylinder'],
-      ['Watchdog', 'timer'],
-    ],
-    onEntry: [
-      { eq: 'Conveyor.IMotor.Run', value: false },
-      { eq: 'Pusher.ICylinder.Extend', value: true },
-      { restart: 'Watchdog' },
-    ],
-  },
-  {
-    name: 'Seal',
-    description: 'The seal head presses for the seal time.',
-    roles: [
-      ['SealHead', 'device', 'Cylinder'],
-      ['SealTimer', 'timer'],
-    ],
-    onEntry: [{ eq: 'SealHead.ICylinder.Extend', value: true }, { restart: 'SealTimer' }],
-    onExit: [{ eq: 'SealHead.ICylinder.Extend', value: false }],
-  },
-  {
-    name: 'Release',
-    description: 'The pusher pulls back.',
-    roles: [['Pusher', 'device', 'Cylinder']],
-    onEntry: [{ eq: 'Pusher.ICylinder.Extend', value: false }],
-  },
-  {
-    name: 'Faulted',
-    description: 'Everything off, lamp on, wait for Fault Reset.',
-    roles: [
-      ['Conveyor', 'device', 'Motor'],
-      ['Pusher', 'device', 'Cylinder'],
-      ['SealHead', 'device', 'Cylinder'],
-      ['Lamp', 'device', 'Indicator'],
-    ],
-    onEntry: [
-      { eq: 'Conveyor.IMotor.Run', value: false },
-      { eq: 'Pusher.ICylinder.Extend', value: false },
-      { eq: 'SealHead.ICylinder.Extend', value: false },
-      { global: 'Running', value: false },
-      { eq: 'Lamp.IIndicator.On', value: true },
-    ],
-  },
-];
-
-const CONDITIONS: {
-  name: string;
-  description: string;
-  roles: RoleSpec[];
-  /** Picker texts, joined with AND; a leading "!" switches NOT on. */
-  terms: string[];
-  alarm?: { group: string; message: string };
-}[] = [
-  {
-    name: 'StartPressed',
-    description: 'Start button pressed (rising edge).',
-    roles: [],
-    terms: ['rising(Global.Start)'],
-  },
-  {
-    name: 'StopPressed',
-    description: 'Stop button pressed (rising edge).',
-    roles: [],
-    terms: ['rising(Global.Stop)'],
-  },
-  {
-    name: 'BoxArrived',
-    description: 'A box is at the stop.',
-    roles: [['Sensor', 'device', 'Sensor']],
-    terms: ['Sensor.ISensor.Present'],
-  },
-  {
-    name: 'PusherOut',
-    description: 'The cylinder is fully extended.',
-    roles: [['Cylinder', 'device', 'Cylinder']],
-    terms: ['Cylinder.ICylinder.Extended'],
-  },
-  {
-    name: 'SealDone',
-    description: 'The timer has finished.',
-    roles: [['Timer', 'timer']],
-    terms: ["timer.done('Timer')"],
-  },
-  {
-    name: 'PusherHome',
-    description: 'The cylinder is fully retracted.',
-    roles: [['Cylinder', 'device', 'Cylinder']],
-    terms: ['Cylinder.ICylinder.Retracted'],
-  },
-  {
-    name: 'PusherStuck',
-    description:
-      'Extend was commanded but the cylinder did not report Extended before the watchdog ran out.',
-    roles: [
-      ['Cylinder', 'device', 'Cylinder'],
-      ['Watchdog', 'timer'],
-    ],
-    terms: ['Cylinder.ICylinder.Extend', '!Cylinder.ICylinder.Extended', "timer.done('Watchdog')"],
-    alarm: { group: 'Sealer', message: 'Pusher did not extend within 2 s' },
-  },
-  {
-    name: 'ResetPressed',
-    description: 'Fault Reset pressed (rising edge).',
-    roles: [],
-    terms: ['rising(Global.FaultReset)'],
-  },
-];
-
 /* --- comparison ------------------------------------------------------------- */
 
 /**
  * Replaces every ID with a readable label of what it names ("Interface IMotor › Signal Run"),
- * drops the IDs themselves and the parts that belong to the Planner (Phase 3).
+ * drops the IDs themselves and the drawing (plan.json: positions only for this machine).
  */
 function comparable(p: Project): unknown {
   const labels = new Map<string, string>();
@@ -300,15 +84,7 @@ function comparable(p: Project): unknown {
     equipment: swap(p.equipment),
     conditions: swap(p.conditions),
     states: swap(p.states),
-    machines: p.machines.map(({ machine: m }) => {
-      // Phase 3 (Planner): Init, transitions, aborts, interrupts.
-      const { initial, transitions, aborts, interrupts, ...rest } = m;
-      void initial;
-      void transitions;
-      void aborts;
-      void interrupts;
-      return swap(rest);
-    }),
+    machines: p.machines.map(({ machine: m }) => swap(m)),
   };
 }
 
@@ -320,6 +96,7 @@ test('Acceptance: rebuild the seed Sealer machine from an empty project, UI only
   const seed = await loadProject(SEED_DIR);
   expect(seed.problems).toEqual([]);
 
+  watchReloads(page);
   await page.goto('/studio');
   await expect(page.getByTestId('status-connection')).toContainText('Connected');
   await page.getByRole('menuitem', { name: 'File' }).click();
@@ -329,87 +106,13 @@ test('Acceptance: rebuild the seed Sealer machine from an empty project, UI only
   await page.getByTestId('dialog-ok').click();
   await expect(page.getByTestId('title-text')).toContainText(projectName);
 
-  // 1. Interfaces.
-  await openFromTree(page, 'Interfaces');
-  for (const i of INTERFACES) {
-    await createNamed(page, i.name);
-    const card = page.getByTestId(`interface-card-${i.name}`);
-    await card.getByPlaceholder('what kind of connection this describes').fill(i.description);
-    for (let n = 0; n < i.signals.length; n++) {
-      const [name, direction, description] = i.signals[n]!;
-      await card.getByTestId('add-signal').click();
-      await card.getByTestId('signal-name').nth(n).fill(name);
-      const row = card.getByTestId(`signal-row-${name}`);
-      await row.getByTestId('signal-direction').selectOption(direction);
-      if (description) await row.getByPlaceholder('what it is for').fill(description);
-    }
-  }
-
-  // 2. Equipment, with simulated behaviour.
-  await openFromTree(page, 'Equipment');
-  const EQUIPMENT: [string, string[], string?][] = [
-    [
-      'Motor',
-      ['IMotor', 'IFault'],
-      'Motor with fault feedback. Simulated: Running follows Run after 100 ms.',
-    ],
-    ['Sensor', ['ISensor']],
-    ['Cylinder', ['ICylinder'], 'Simulated: takes 400 ms to travel out or back.'],
-    ['Indicator', ['IIndicator']],
-  ];
-  for (const [name, ifaces, description] of EQUIPMENT) {
-    await createNamed(page, name);
-    const card = page.getByTestId(`equipment-card-${name}`);
-    if (description) await card.getByPlaceholder('what this device is').fill(description);
-    for (const i of ifaces) await card.getByTestId('add-interface').selectOption({ label: i });
-  }
-  {
-    const motor = page.getByTestId('equipment-card-Motor');
-    await motor.getByTestId('sim-kind').selectOption('follow');
-    await motor.getByTestId('sim-command').selectOption({ label: 'IMotor.Run' });
-    await motor.getByTestId('sim-feedback').selectOption({ label: 'IMotor.Running' });
-    await motor.getByTestId('sim-delay').fill('100');
-    const cyl = page.getByTestId('equipment-card-Cylinder');
-    await cyl.getByTestId('sim-kind').selectOption('cylinder');
-    await cyl.getByTestId('sim-command').selectOption({ label: 'ICylinder.Extend' });
-    await cyl.getByTestId('sim-extended').selectOption({ label: 'ICylinder.Extended' });
-    await cyl.getByTestId('sim-retracted').selectOption({ label: 'ICylinder.Retracted' });
-    await cyl.getByTestId('sim-travel').fill('400');
-  }
-
-  // 3. Global variables.
-  await openFromTree(page, 'Global Variables');
-  for (const [name, type, description, unit] of GLOBALS) {
-    await createNamed(page, name);
-    const row = page.getByTestId(`global-row-${name}`);
-    if (type !== 'bool') await row.getByTestId('global-type').selectOption(type);
-    if (unit) await row.getByPlaceholder('unit').fill(unit);
-    await row.getByTestId('global-description').fill(description);
-  }
+  await buildLibrary(page);
 
   // 4. Condition templates, from term boxes and the variable picker.
   await openFromTree(page, 'Conditions');
   for (const c of CONDITIONS) {
     await createNamed(page, c.name);
-    const card = page.getByTestId(`condition-card-${c.name}`);
-    await card.getByPlaceholder('what this rule means').fill(c.description);
-    await addRoles(card, c.roles);
-    for (let n = 0; n < c.terms.length; n++) {
-      const raw = c.terms[n]!;
-      const negate = raw.startsWith('!');
-      // A new condition starts as "true": the first term replaces it.
-      if (n === 0) await card.getByRole('button', { name: 'pick…' }).click();
-      else await card.getByTestId('add-term').click();
-      await pick(page, negate ? raw.slice(1) : raw);
-      if (negate) await card.getByTestId('not-toggle').nth(n).click();
-    }
-    if (c.alarm) {
-      await card.getByTestId('alarm-toggle').click();
-      await card.getByTestId('alarm-enabled').check();
-      await card.getByTestId('alarm-severity').selectOption('alarm');
-      await card.getByTestId('alarm-group').fill(c.alarm.group);
-      await card.getByTestId('alarm-message').fill(c.alarm.message);
-    }
+    await fillCondition(page, c);
   }
   await expect(
     page.getByTestId('condition-card-PusherStuck').getByTestId('condition-summary'),
@@ -420,30 +123,9 @@ test('Acceptance: rebuild the seed Sealer machine from an empty project, UI only
 
   // 5. State templates, with the + Add menu and action forms.
   await openFromTree(page, 'States');
-  for (const s of STATES) {
-    await createNamed(page, s.name);
-    const card = page.getByTestId(`state-card-${s.name}`);
-    await card.getByPlaceholder('what the machine is doing in this state').fill(s.description);
-    await addRoles(card, s.roles);
-    for (const key of ['onEntry', 'steps', 'onExit'] as const) {
-      const group = card.getByTestId(`group-${key}`);
-      for (const a of s[key] ?? []) {
-        await group.getByTestId('add-action').click();
-        if ('restart' in a) {
-          await group.getByTestId('add-timer').click();
-          await group.getByTestId('timer-op').selectOption('restart');
-          await group.getByTestId('timer-role').selectOption({ label: a.restart });
-        } else if ('global' in a) {
-          await group.getByTestId('add-global').click();
-          await group.getByTestId('action-target').selectOption({ label: `Global.${a.global}` });
-          await group.getByTestId('action-value').selectOption(String(a.value));
-        } else {
-          await group.getByTestId('add-equipment').click();
-          await group.getByTestId('action-target').selectOption({ label: a.eq });
-          await group.getByTestId('action-value').selectOption(String(a.value));
-        }
-      }
-    }
+  for (const st of STATES) {
+    await createNamed(page, st.name);
+    await fillState(page, st);
   }
   await expect(
     page.getByTestId('state-card-Push').getByTestId('group-onEntry').getByTestId('action-text'),
@@ -457,76 +139,59 @@ test('Acceptance: rebuild the seed Sealer machine from an empty project, UI only
   // 6. The machine: instances, timers, states and conditions it uses, bindings.
   await openFromTree(page, 'Machines');
   await createNamed(page, 'Sealer');
-  const card = page.getByTestId('machine-card-Sealer');
-  await card
-    .getByPlaceholder('what this machine does')
-    .fill('Feeds a box to the stop, pushes it under the seal head, seals it, releases it.');
-  await card.getByTestId('machine-cycle').fill('10');
-  const INSTANCES: [string, string][] = [
-    ['Conveyor', 'Motor'],
-    ['BoxAtStop', 'Sensor'],
-    ['Pusher', 'Cylinder'],
-    ['SealHead', 'Cylinder'],
-    ['Lamp', 'Indicator'],
-  ];
-  for (let n = 0; n < INSTANCES.length; n++) {
-    const [name, type] = INSTANCES[n]!;
-    await card.getByTestId('add-instance').click();
-    await card.getByTestId('instance-type').nth(n).selectOption({ label: type });
-    await card.getByTestId('instance-name').nth(n).fill(name);
-  }
-  const TIMERS: [string, number][] = [
-    ['SealTime', 1500],
-    ['PusherWatch', 2000],
-  ];
-  for (let n = 0; n < TIMERS.length; n++) {
-    const [name, preset] = TIMERS[n]!;
-    await card.getByTestId('add-timer').click();
-    await card.getByTestId('timer-name').nth(n).fill(name);
-    await card.getByTestId('timer-preset-ms').nth(n).fill(String(preset));
-  }
-  for (const s of STATES) {
-    await card.getByTestId('add-state-instance').selectOption({ label: s.name });
-  }
-  for (const c of CONDITIONS) {
-    await card.getByTestId('add-condition-instance').selectOption({ label: c.name });
-  }
-  await expect(card.getByTestId('state-instance')).toHaveCount(6);
-  await expect(card.getByTestId('condition-instance')).toHaveCount(8);
+  await composeSealer(page, true);
 
-  // Auto-bind takes the ones with an obvious answer (same name, or the only one of its type)...
-  await card.getByTestId('auto-bind').click();
-  // ...and the rest are bound by hand: two cylinders and two timers have no obvious answer.
-  await expect(card.getByTestId('unbound-count')).toHaveText('7 unbound');
-  const HAND: [string, string, string][] = [
-    ["State 'Push'", 'Watchdog', 'PusherWatch'],
-    ["State 'Seal'", 'SealTimer', 'SealTime'],
-    ["Condition 'PusherOut'", 'Cylinder', 'Pusher'],
-    ["Condition 'SealDone'", 'Timer', 'SealTime'],
-    ["Condition 'PusherHome'", 'Cylinder', 'Pusher'],
-    ["Condition 'PusherStuck'", 'Cylinder', 'Pusher'],
-    ["Condition 'PusherStuck'", 'Watchdog', 'PusherWatch'],
+  // 7. The Planner (Phase 3): the machine's states are already on the canvas; draw the wiring.
+  await openPlanner(page);
+  await page.getByTestId('planner-fit').click();
+  await wire(page, 'init-out-Sealer', 'in-Idle');
+  const TRANSITIONS: [string, string, string][] = [
+    ['Idle', 'Feed', 'StartPressed'],
+    ['Feed', 'Push', 'BoxArrived'],
+    ['Push', 'Seal', 'PusherOut'],
+    ['Seal', 'Release', 'SealDone'],
+    ['Release', 'Feed', 'PusherHome'],
+    ['Faulted', 'Idle', 'ResetPressed'],
   ];
-  for (const [user, role, to] of HAND) {
-    const row = card.getByTestId(`binding-${user}-${role}`);
-    await expect(row).toHaveClass(/row-warn/);
-    await row.getByTestId('binding-select').selectOption({ label: to });
-    await expect(row.getByTestId('binding-select').locator('option:checked')).toHaveText(to);
+  for (const [from, to, cond] of TRANSITIONS) {
+    await wire(page, `out-${from}`, `in-${to}`);
+    await setCondition(page, `chip-${from}-${to}`, cond); // the instance the composer already bound
+    await expect(page.getByTestId(`chip-${from}-${to}`)).toHaveText(cond);
   }
-  await expect(card.getByTestId('unbound-count')).toHaveText('All roles bound');
+  await setCondition(page, 'slot-abort-Sealer-1', 'PusherStuck');
+  await wire(page, 'abort-out-abort-Sealer-1', 'in-Faulted');
+  await setCondition(page, 'slot-trigger-Sealer-1', 'StopPressed');
+  await setCondition(page, 'slot-resume-Sealer-1', 'StartPressed');
+  // The hold action: the same action form as in the States editor, on the machine's real devices.
+  await page.getByTestId('hold-trigger-Sealer-1').click();
+  const hold = page.getByTestId('hold-dialog').getByTestId('group-onHold');
+  await hold.getByTestId('add-action').click();
+  await hold.getByTestId('add-equipment').click();
+  await hold.getByTestId('action-target').selectOption({ label: 'Conveyor.IMotor.Run' });
+  await hold.getByTestId('action-value').selectOption('false');
+  await expect(hold.getByTestId('action-text')).toHaveText(['Conveyor.IMotor.SetRun(false)']);
+  await page.getByTestId('hold-close').click();
+  await expect(page.getByTestId('hold-trigger-Sealer-1')).toHaveText('hold: 1');
 
-  // 7. The validator: what is left is the Planner's job (Phase 3), shown live with click-to-go.
-  const problems = page.getByTestId('problem-row');
-  await expect(problems).toHaveCount(1);
-  await expect(problems.first()).toContainText(
-    "Machine 'Sealer': the Init node is not connected to a first state",
-  );
-  await page.screenshot({ path: `${SHOTS}/rebuild-machine.png` });
+  // Nothing is left for the validator to complain about.
+  await expect(page.getByTestId('problem-row')).toHaveCount(0);
+  await page.screenshot({ path: `${SHOTS}/rebuild-planner.png` });
 
-  // 8. Save, then compare what is on disk with the seed.
-  await page.keyboard.press('Control+s');
+  // 8. Save, then compare what is on disk with the seed: library, machine and wiring.
+  await page.getByTestId('planner-save').click();
   await expect(page.getByTestId('status-saved')).toContainText('No unsaved');
   const saved = (await (await page.request.get('/api/project')).json()) as { project: Project };
   expect(saved.project.info.name).toBe(projectName);
   expect(comparable(saved.project)).toEqual(comparable(seed.project!));
+
+  // 9. The engine runs the rebuilt machine: Start, a box arrives, it is pushed.
+  const engine = new Engine(saved.project);
+  engine.step(1);
+  expect(engine.machine('Sealer').state).toBe('Idle');
+  engine.inject('Global.Start', true);
+  engine.step(1);
+  expect(engine.machine('Sealer').state).toBe('Feed');
+  engine.inject('Sealer.BoxAtStop.ISensor.Present', true);
+  engine.step(1);
+  expect(engine.machine('Sealer').state).toBe('Push');
 });

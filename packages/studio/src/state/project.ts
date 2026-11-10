@@ -23,6 +23,8 @@ interface ProjectState {
   save(): Promise<boolean>;
   /** Changes the working copy. `fn` mutates a private copy. */
   update(fn: (draft: Project) => void): void;
+  /** Puts back a whole earlier version of the working copy (undo / redo). */
+  replace(project: Project): void;
   setFocus(id: string | null): void;
   newProject(name: string): Promise<boolean>;
   openProject(name: string): Promise<boolean>;
@@ -83,6 +85,10 @@ export const useProject = create<ProjectState>((set, get) => ({
     const draft = structuredClone(current);
     fn(draft);
     set({ project: draft, problems: check(draft) });
+  },
+
+  replace(project) {
+    set({ project, problems: check(project) });
   },
 
   setFocus(id) {

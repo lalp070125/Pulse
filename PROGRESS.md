@@ -1,26 +1,43 @@
-# Phase 2 progress — library editors and composer
+# Progress
 
-Branch: `phase-2-library-editors`
+## Phase 3 — Planner canvas
 
-## Done
+Branch: `phase-3-planner-canvas`
 
-- Foundation: runtime project API (open/create/save, schema-checked), Studio working copy of the project, live project tree, New/Rename/Duplicate/Delete/Find-usages, dialogs, Save (Ctrl+S), unsaved indicator, File > New/Open project
-- Global Variables editor (all types incl. nested array/map/record) + browser test `e2e/library.spec.ts`
-- Interfaces editor (card per interface, typed and directed signals) + browser test
-- Equipment editor (interfaces it is made of, simulated behaviour) + browser test
-- Conditions editor: roles, IF row of term boxes (operators, NOT, brackets, compare), read-only summary, alarm section, variable picker (typed, searchable, categories) + shared text helpers in core (`catalog.ts`) tested against the compiler
-- States editor: roles, On Entry / Steps / On Exit, **+ Add** menu (Equipment, Global, Generic, Timer; Logic block and Queue shown as Phase 6), text forms, drag to reorder, per-action edit form + browser test
-- Machines composer: cycle time, instances, timers, state and condition instances, binding table (unbound in warning colour, Auto-bind) + browser test
-- Validator core (`validateProject`): compiler problems plus unreachable state, no way out, transition without condition, library items pointing at deleted things; each with a location. 8 tests against the seed.
+### Done
 
-- Validator problems in the Messages panel: live rows (Time shows "live", Source "Validator"), counted in the level pills, filterable, copied with Copy, not removed by Clear; click (or Enter) opens the editor and lights the item. Machine card got a description field. Browser test in `e2e/library.spec.ts`.
-- Acceptance check (`e2e/rebuild-seed.spec.ts`): from an empty project, the whole Sealer library and machine is rebuilt by clicking only (5 interfaces, 4 equipment types with simulation, 5 globals, 8 conditions incl. the PusherStuck alarm, 6 states with their actions, the machine with 5 instances, 2 timers, 6 states, 8 conditions, all 20 bindings). The saved project equals `projects/box-sealer-demo` once IDs are replaced by names. **Excluded:** Init, transitions, abort and interrupt (Planner, Phase 3); the validator correctly reports the one remaining problem, "the Init node is not connected to a first state".
+- **Model in core** (`packages/core/src/planner.ts`, pure, 11 tests in `packages/runtime/src/planner.test.ts`): add / delete / move states, draw wires, priorities in drawing order and renumbering, Init, abort and interrupt blocks, hold actions, condition choice (instance, library condition or typed name), Construct Machine, copy / paste, drawing-only junctions.
+- **Placeholders live in `plan.json`** (owner decision): states, wires, Init, aborts and interrupts that are not real yet. Anything fully real is written to `machine.json`. The engine and the validator never read `plan.json` (tested; SPEC 5.1 updated).
+- **Construct Machine**: creates state templates (empty) and condition templates (one "TO DO" term, always false, flagged as a warning) from placeholder names; reuses library items with the same name; keeps node IDs so the drawing stays put; running it again only adds what is new ("Add New Items").
+- **Canvas** (`packages/studio/src/planner/`): dark grid (20 px, stronger every 100 px), machine boxes with indigo header, collapse arrow, resize, Init node (cannot be deleted), state nodes with first On Entry lines, ports top/bottom; orthogonal wires with rounded corners and arrowheads, priority badge, condition label; back wires routed through side lanes; Abort / Interrupt Trig / Interrupt Resume blocks with "(Unassigned)" slots and a hold-actions dialog (the States editor's action form); placeholders `[Name]` with dashed borders.
+- **Toolbar**: Save, undo, redo, State, Machine, H, V, Exp, delete, minimap, fit, zoom %. Right-edge **FSM / Queues** strip (Queues is a Phase 6 placeholder). Footer `Machines: n | Unsaved: n`. Machine header right-click: Construct Machine / Add New Items, Open in composer, Delete.
+- **Editing**: drag to move (snap to grid), box-select, Delete, Ctrl+C / Ctrl+V, Ctrl+Z / Ctrl+Y for every canvas action, wheel / pinch zoom, Space-drag or two-finger pan. Undo only covers canvas edits and starts fresh after an edit made elsewhere.
+- **Validator click-to-go**: problems about Init, transitions, priorities, abort, interrupt, unreachable states open the Planner at the machine or state; the rest of a machine still opens the composer.
+- **Browser tests**: `e2e/planner.spec.ts` (seed drawing; drawing from placeholders through Construct; junctions and box-select), `e2e/rebuild-seed.spec.ts` (Sealer rebuilt from an empty project, now including Init, transitions, abort, interrupt with its hold action, compared with the seed in full, then run by the engine), `e2e/acceptance-phase3.spec.ts` (the two-machine demo).
 
-## Carried to Phase 3 (owner decision, 2026-11-09)
+### Acceptance
 
-- Phase 2 accepted without state wiring. **The Phase 3 acceptance must also finish the Sealer rebuild** in `e2e/rebuild-seed.spec.ts`: draw Init, the transitions, the PusherStuck abort and the Stop/Start interrupt in the Planner, and compare them with the seed too (no temporary way to enter them in Phase 2).
+`e2e/acceptance-phase3.spec.ts`: in an empty project, the Sealer and Infeed machines are drawn from placeholders only, constructed (the second Construct reuses StartPressed), their skeletons filled in with the Phase 2 editors, saved, and the engine runs both: Start → Sealer Feed / Infeed Gap; after the 500 ms gap Infeed is in Handover; a box arrives → Sealer Push, and Infeed sees `inState(Sealer, Push)` and goes back to Gap; the cycle continues into Seal.
 
-## Status
+### Phone (owner request 2026-11-10, within SPEC 4.1: desktop layout, scaled)
 
-Phase 2 complete, waiting for the owner's confirmation before merging.
-Browser-test timeouts: 2 of the first 9 full runs had one timeout each (different test each time). Afterwards, 8 full runs in a row were green (load 4–5 on 2 CPUs), and a run under deliberate 3x CPU overload was 2.5x slower but still passing until it was stopped. No source edit or Vite dependency rebuild happened during the failing runs, so there is no sign of a page reload. The timeouts were not reproduced; no app fault was found, but the cause is not proven either.
+- Touch screens: one finger on empty canvas pans, two fingers pan and zoom the drawing (this did not work before: the desktop pan setting switched off all touch pan and zoom, and a pinch that started on a machine box was ignored). Only a box's header bar and resize handles catch touches now.
+- Finger-sized dots, badges, labels and slots on touch screens; a wire end snaps to a dot from further away.
+- **Full screen** button in the Planner toolbar: hides the side panels and Messages, fits the drawing; press again to bring them back.
+- Safari's own page zoom is blocked on the canvas (`touch-action: none` and Safari gesture events). **Not verified on a real iPhone**: the test browser here (Chromium with the iPhone 16 Pro Max profile) does no page zoom, so this can only be confirmed on the phone.
+- Browser test `e2e/phone.spec.ts`: full screen, two-finger zoom, dot size, a wire drawn by touch.
+- On touch screens there is no box-select (one finger pans instead).
+
+### Decisions recorded
+
+- The demo's Infeed and Sealer coordinate through `inState(...)` (and globals). **The `ToSealer` queue of SPEC 12 comes in Phase 6** with queues. The seed project is unchanged.
+- H / V / Exp junctions are drawing only (they never change machine.json) and are not part of the acceptance test.
+- Double-click on the canvas does not zoom: double-click edits badges and labels (SPEC 6.3).
+
+### Browser-test timeouts: cause found and fixed
+
+The intermittent timeouts first seen in Phase 2 were **a real bug in the name dialog**, not machine load and not a page reload. When a name dialog opened, its text field first showed an empty or stale value (the previous dialog's text) and only got its suggested name a moment later. Typing that landed in that gap mixed with the suggestion: a run on 2026-11-10 created a machine called "MachineInfeed" instead of "Infeed", and the test then waited for "Infeed" until it timed out. The new live-reload logging showed no reload during that test, which pointed to the app itself. Fix: each dialog now starts with its own text from its first frame (`ui/Dialogs.tsx`). A regression test (`e2e/library.spec.ts`, "A name dialog holds its own suggested text…") checks the field's value at the moment the dialog appears. It fails on the old code (it saw the previous project name, then "Alpha") and passes on the new code.
+
+## Phase 2 — Library editors and composer
+
+Merged to `main` (owner confirmed 2026-11-09). Editors for globals, interfaces, equipment, conditions (with variable picker), states (with action menus), Machines composer with bindings, validator with click-to-go. Accepted without state wiring; the Phase 3 acceptance finishes the Sealer rebuild (done above).

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Copy, Filter, Pause, Play, Trash2 } from 'lucide-react';
 import type { Issue } from '@pulso/core';
 import { openEditor } from '../state/entities';
+import { openPlanner } from '../planner/store';
 import { useProject } from '../state/project';
 import { useShell, type Message, type MessageLevel } from '../state/store';
 
@@ -168,7 +169,9 @@ export function MessagesPanel() {
       <div className="messages-body mono" ref={body}>
         {visibleProblems.map((p, i) => {
           const at = p.at;
-          const go = at ? () => openEditor(at.kind, at.id) : undefined;
+          const go = at
+            ? () => (at.planner ? openPlanner(at.id, at.item) : openEditor(at.kind, at.id))
+            : undefined;
           return (
             <div
               key={`problem-${i}`}

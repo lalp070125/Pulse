@@ -200,7 +200,7 @@ logic-blocks/<id>.json (+ .pst source)
 conditions/<id>.json
 states/<id>.json
 machines/<id>/machine.json        instances, bindings, fsm, queues, timers
-machines/<id>/plan.json           canvas layout (positions only)
+machines/<id>/plan.json           canvas drawing: positions, machine box, junctions, placeholders
 routing.json                      the bus manager table
 tests/cases/<id>.json
 tests/fixtures/<id>.json
@@ -209,6 +209,8 @@ panels/<id>/...                   HMI pages, widgets, bindings
 twin/stations/<id>.json
 twin/lines/<id>.json
 ```
+
+`plan.json` holds only the drawing. Placeholders (SPEC 6.3: states, wires, Init, abort and interrupt blocks that are not real yet) are stored there until Construct Machine or a later edit makes them real; anything fully real is written to `machine.json`. **The engine and the validator never read `plan.json`.** *(Added in Phase 3.)*
 
 Every entity has a **stable ID** (ULID) and a `name`. **All references use the ID, never the name**, so renaming never breaks anything. Deleting an entity that is referenced must list what depends on it and ask for confirmation.
 

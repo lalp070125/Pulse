@@ -63,4 +63,20 @@
   --pad: 8px; /* minimum inner padding */
   --icon: 14px;
   --motion: 120ms ease-out; /* hover and selection only */
+
+  /* Planner canvas (SPEC 6.3). Sizes are read by the canvas code from here. */
+  --grid-line-strong: color-mix(
+    in srgb,
+    var(--grid-line) 45%,
+    var(--border-strong)
+  ); /* every 100 px */
+  --machine-head: color-mix(in srgb, var(--accent) 30%, var(--bg-0)); /* deep indigo header bar */
+  --wire: var(--text-2); /* light grey transition wires */
+  --planner-grid: 20px;
+  --state-w: 190px;
+  --state-h: 110px;
+  --machine-head-h: 32px;
+  --block-row-h: 84px;
+  --block-w: 128px;
+  --wire-lane: 14px; /* gap between side lanes of back wires */
 }

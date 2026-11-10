@@ -117,6 +117,8 @@ export function exprText(project: Project, roles: Role[], e: Expr): string {
       return `timer.running('${timerText(roles, e.timer)}')`;
     case 'timerElapsed':
       return `timer.elapsed('${timerText(roles, e.timer)}')`;
+    case 'todo':
+      return 'TO DO';
   }
 }
 
