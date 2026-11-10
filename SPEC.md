@@ -680,6 +680,7 @@ Playwright smoke tests for every screen, docs pages, performance pass (100 state
 - Never copy names, logos, text or assets from other products.
 - Never present this software as a safety system (section 13).
 - Work on a branch per phase; merge only after the acceptance checklist passes and the owner confirms.
+- Keep the handoff current: after each finished step, update "Resume here" in `PROGRESS.md`, then commit and push. Another person may continue on another account at any time.
 
 ---
 

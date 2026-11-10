@@ -1,5 +1,14 @@
 # Progress
 
+## Resume here
+
+Two people take turns on this project, each with their own Claude account. Keep this block short and current: a new session reads it first. One line per work stream.
+
+- **Updated:** 2026-11-10
+- **Phase 4 (Runtime, Monitor, Routing editor)** — branch `phase-4-runtime-monitor`. In progress in another session. Next step: read that branch's latest commits and its own PROGRESS.md, then continue.
+- **Phase 8 Twin scene (parallel, approved)** — branch `phase-8-twin-scene`. In progress in another session. Next step: read that branch's latest commits and its own PROGRESS.md, then continue with `docs/parallel-twin-plan.md`.
+- **Waiting on the owner:** nothing.
+
 ## Phase order changed (owner decision, 2026-11-10)
 
 SPEC section 14 now lists the phases in this order: 0, 1, 2, 3, 4, **8**, 5, 6, 7, 9, 10. Phase numbers and contents are unchanged; only Phase 8 moved up. Nothing else in the spec changed.
