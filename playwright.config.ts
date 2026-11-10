@@ -20,6 +20,8 @@ export default defineConfig({
       PULSO_PROJECTS_DIR: path.resolve('test-results/projects'),
     },
     reuseExistingServer: false,
+    // The server's own messages (Vite reloads, re-bundling) appear in the test output as [WebServer] lines.
+    stdout: 'pipe',
     timeout: 60_000,
   },
 });

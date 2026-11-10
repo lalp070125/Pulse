@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { addMachine, addState, newProject, openPlanner, setCondition, wire } from './helpers';
 import type { Project } from '@pulso/core';
 import { buildBoxSealer } from '../packages/runtime/src/seed/boxSealer';
 
@@ -8,19 +9,6 @@ test.use({ viewport: { width: 1440, height: 900 } });
 test.setTimeout(120_000);
 
 const SHOTS = 'test-results/screens';
-let counter = 0;
-
-export async function newProject(page: Page, prefix = 'plan'): Promise<string> {
-  const name = `${prefix}-${Date.now()}-${counter++}`;
-  await page.goto('/studio');
-  await expect(page.getByTestId('status-connection')).toContainText('Connected');
-  await page.getByRole('menuitem', { name: 'File' }).click();
-  await page.getByRole('menuitem', { name: /New Project/ }).click();
-  await page.getByTestId('dialog-input').fill(name);
-  await page.getByTestId('dialog-ok').click();
-  await expect(page.getByTestId('title-text')).toContainText(name);
-  return name;
-}
 
 /** Puts a copy of the seed project (Sealer, fully wired) into the open project. */
 async function loadSeed(page: Page): Promise<void> {
@@ -30,11 +18,6 @@ async function loadSeed(page: Page): Promise<void> {
   expect((await page.request.put('/api/project', { data: { project: seed } })).ok()).toBe(true);
   await page.reload();
   await expect(page.getByTestId('status-connection')).toContainText('Connected');
-}
-
-async function openPlanner(page: Page): Promise<void> {
-  await page.getByTestId('project-tree').getByText('Planner', { exact: true }).click();
-  await expect(page.getByTestId('editor-planner')).toBeVisible();
 }
 
 test('Planner shows the seed Sealer: box, Init, states, wires with priorities and labels, blocks', async ({
@@ -57,45 +40,6 @@ test('Planner shows the seed Sealer: box, Init, states, wires with priorities an
   await expect(page.getByTestId('planner-footer')).toHaveText('Machines: 1 | Unsaved: 0');
   await page.screenshot({ path: `${SHOTS}/planner-seed.png` });
 });
-
-/** Drags from one port (a test ID) to another, like a mouse user drawing a wire. */
-async function wire(page: Page, from: string, to: string): Promise<void> {
-  const a = (await page.getByTestId(from).boundingBox())!;
-  const b = (await page.getByTestId(to).boundingBox())!;
-  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 12 });
-  await page.mouse.up();
-}
-
-async function addMachine(page: Page, name: string): Promise<void> {
-  await page.getByTestId('planner-add-machine').click();
-  await page.getByTestId('dialog-input').fill(name);
-  await page.getByTestId('dialog-ok').click();
-  await expect(page.getByTestId(`machine-box-${name}`)).toBeVisible();
-}
-
-async function addState(page: Page, machine: string, name: string): Promise<void> {
-  await page.getByTestId(`machine-head-${machine}`).click(); // the State button adds to this machine
-  await page.getByTestId('planner-add-state').click();
-  await page.getByTestId('dialog-input').fill(name);
-  await page.getByTestId('dialog-ok').click();
-  await expect(page.getByTestId(`state-node-${name}`)).toBeVisible();
-}
-
-/** Opens the chooser by double-clicking a label or slot, then picks or types `name`. */
-async function setCondition(page: Page, testId: string, name: string): Promise<void> {
-  await page.getByTestId(testId).dblclick();
-  const chooser = page.getByTestId('condition-chooser');
-  await expect(chooser).toBeVisible();
-  await chooser.getByTestId('cond-search').fill(name);
-  const existing = chooser
-    .getByTestId('cond-option')
-    .filter({ has: page.getByText(name, { exact: true }) });
-  if (await existing.count()) await existing.first().click();
-  else await chooser.getByTestId('cond-search').press('Enter');
-  await expect(chooser).toBeHidden();
-}
 
 test('Planner: draw from placeholders, wire, priorities, undo/redo, save, Construct, delete, copy/paste', async ({
   page,
@@ -221,4 +165,59 @@ test('Planner: draw from placeholders, wire, priorities, undo/redo, save, Constr
   await page.getByTestId('planner-view-fsm').click();
   await expect(page.getByTestId('state-node-Warmup')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/planner-constructed.png` });
+});
+
+test('Planner: H / V / Exp junctions are drawing only; box-select and delete', async ({ page }) => {
+  await newProject(page);
+  await loadSeed(page);
+  await openPlanner(page);
+  await page.getByTestId('planner-fit').click();
+  const before = ((await (await page.request.get('/api/project')).json()) as { project: Project })
+    .project.machines[0]!.machine;
+
+  // A combiner needs wires that end at one state: Idle → Feed and Release → Feed do.
+  await page.getByTestId('chip-Idle-Feed').click();
+  await page.getByTestId('chip-Release-Feed').click({ modifiers: ['Shift'] });
+  await page.getByTestId('planner-h').click();
+  await expect(page.getByTestId('junction-h')).toHaveCount(1);
+
+  // An expander needs wires leaving one state; two wires that do not share one are refused.
+  await page.getByTestId('chip-Feed-Push').click();
+  await page.getByTestId('chip-Seal-Release').click({ modifiers: ['Shift'] });
+  await page.getByTestId('planner-exp').click();
+  await expect(page.getByTestId('messages')).toContainText(
+    'An expander fans out wires that leave the same state.',
+  );
+  await expect(page.getByTestId('junction-exp')).toHaveCount(0);
+
+  // The junction changes the drawing only: the logic saved is the same as before.
+  await page.getByTestId('planner-save').click();
+  await expect(page.getByTestId('status-saved')).toContainText('No unsaved');
+  const after = ((await (await page.request.get('/api/project')).json()) as { project: Project })
+    .project.machines[0]!;
+  expect(after.machine).toEqual(before);
+  expect(after.plan.junctions).toHaveLength(1);
+  await page.screenshot({ path: `${SHOTS}/planner-junction.png` });
+
+  // Box-select two states by dragging on empty canvas, then delete both (undo brings them back).
+  const seal = (await page.getByTestId('state-node-Seal').boundingBox())!;
+  const release = (await page.getByTestId('state-node-Release').boundingBox())!;
+  const left = Math.min(seal.x, release.x) - 8;
+  const top = Math.min(seal.y, release.y) - 8;
+  const right = Math.max(seal.x + seal.width, release.x + release.width) + 8;
+  const bottom = Math.max(seal.y + seal.height, release.y + release.height) + 8;
+  await page.keyboard.down('Shift');
+  await page.mouse.move(left, top);
+  await page.mouse.down();
+  await page.mouse.move(right, bottom, { steps: 10 });
+  await page.mouse.up();
+  await page.keyboard.up('Shift');
+  await expect(page.getByTestId('state-node-Seal')).toHaveClass(/selected/);
+  await expect(page.getByTestId('state-node-Release')).toHaveClass(/selected/);
+  await page.getByTestId('planner-delete').click();
+  await expect(page.getByTestId('state-node-Seal')).toHaveCount(0);
+  await expect(page.getByTestId('state-node-Release')).toHaveCount(0);
+  await page.getByTestId('planner-undo').click();
+  await expect(page.getByTestId('state-node-Seal')).toBeVisible();
+  await expect(page.getByTestId('chip-Seal-Release')).toHaveText('SealDone');
 });

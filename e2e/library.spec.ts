@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Project } from '@pulso/core';
+import { watchReloads } from './helpers';
 
 /** Phase 2: the library editors, driven through the real UI. Each test makes its own project. */
 
@@ -7,6 +8,7 @@ const SHOTS = 'test-results/screens';
 let counter = 0;
 
 async function newProject(page: Page): Promise<void> {
+  watchReloads(page);
   const name = `lib-${Date.now()}-${counter++}`;
   await page.goto('/studio');
   await expect(page.getByTestId('status-connection')).toContainText('Connected');

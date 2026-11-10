@@ -566,6 +566,10 @@ function Canvas() {
       },
       chooseWire: (machine, wire) => usePlanner.getState().setChooser({ machine, wire }),
       renumberWire: (machine, wire) => void askRenumber(machine, wire),
+      selectWire: (edgeId, add) => {
+        setSelectedEdges((prev) => new Set(add ? [...prev, edgeId] : [edgeId]));
+        if (!add) setNodes((prev) => prev.map((n) => (n.selected ? { ...n, selected: false } : n)));
+      },
     }),
     [act],
   );

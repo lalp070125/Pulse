@@ -177,12 +177,18 @@ export function routeUp(from: Pt, inp: Pt, laneX: number): Pt[] {
 
 /** A wire through a drawing-only junction: source → junction, then junction → target. */
 export function routeVia(out: Pt, j: Pt, inp: Pt): Pt[] {
+  // Leave the source downwards, run across just below it, then straight to the junction.
+  const below = out.y + G.grid;
   const above = inp.y - G.grid;
-  const lead =
-    j.y > out.y
-      ? [out, { x: out.x, y: j.y }, j]
-      : [out, { x: out.x, y: out.y + G.grid }, { x: j.x, y: out.y + G.grid }, j];
-  return [...lead, { x: j.x, y: above }, { x: inp.x, y: above }, inp];
+  return [
+    out,
+    { x: out.x, y: below },
+    { x: j.x, y: below },
+    j,
+    { x: j.x, y: above },
+    { x: inp.x, y: above },
+    inp,
+  ];
 }
 
 /** The middle of the longest straight piece, where a condition label sits, and which way it runs. */

@@ -30,6 +30,8 @@ export interface PlannerActions {
   openHold(machine: string, interrupt: string | null): void;
   chooseWire(machine: string, wire: string): void;
   renumberWire(machine: string, wire: string): void;
+  /** Selects a wire (Shift adds it to the selection). */
+  selectWire(edgeId: string, add: boolean): void;
 }
 
 export const PlannerCtx = createContext<PlannerActions | null>(null);
@@ -329,8 +331,12 @@ export function WireEdge({ id, data, selected }: EdgeProps<WireEdgeT>) {
                   : `translate(12px, -50%) translate(${mid.x}px, ${mid.y}px)`
                 : `translate(-50%, calc(-100% - 4px)) translate(${mid.x}px, ${mid.y}px)`,
             }}
-            title="Condition. Double-click to pick or create it."
+            title="Condition. Click to select the wire (Shift adds), double-click to pick or create it."
             data-testid={`chip-${data.ends}`}
+            onClick={(e) => {
+              e.stopPropagation(); // the canvas behind would otherwise clear the selection again
+              act.selectWire(id, e.shiftKey);
+            }}
             onDoubleClick={() => act.chooseWire(data.machine, data.wire!)}
           >
             {data.label ?? '(no condition)'}
