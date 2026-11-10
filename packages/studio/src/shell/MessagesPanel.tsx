@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Copy, Filter, Pause, Play, Trash2 } from 'lucide-react';
+import type { Issue } from '@pulso/core';
+import { openEditor } from '../state/entities';
+import { useProject } from '../state/project';
 import { useShell, type Message, type MessageLevel } from '../state/store';
 
 const LEVELS: { id: MessageLevel; label: string; plural: string }[] = [
@@ -20,10 +23,17 @@ function clock(ms: number): string {
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
 }
 
-function asText(messages: Message[]): string {
-  return messages
-    .map((m) => `${clock(m.time)}\t${LEVEL_LABEL[m.level]}\t${m.source}\t${m.text}`)
-    .join('\n');
+const NO_PROBLEMS: Issue[] = [];
+
+function problemText(p: Issue): string {
+  return `${p.where}: ${p.message}`;
+}
+
+function asText(problems: Issue[], messages: Message[]): string {
+  return [
+    ...problems.map((p) => `live\t${LEVEL_LABEL[p.level]}\tValidator\t${problemText(p)}`),
+    ...messages.map((m) => `${clock(m.time)}\t${LEVEL_LABEL[m.level]}\t${m.source}\t${m.text}`),
+  ].join('\n');
 }
 
 /** Bottom panel (SPEC 6.4): filter, live count pills, Pause / Clear / Copy, message table. */
@@ -32,6 +42,10 @@ export function MessagesPanel() {
   const messages = useShell((s) => s.messages);
   const held = useShell((s) => s.heldMessages.length);
   const paused = useShell((s) => s.messagesPaused);
+  // Validator problems are live: they are listed while they exist and vanish when fixed.
+  // They belong to the Studio project, so the Panel and Twin outputs do not show them.
+  const allProblems = useProject((s) => s.problems);
+  const problems = app === 'studio' ? allProblems : NO_PROBLEMS;
   const [shown, setShown] = useState<Record<MessageLevel, boolean>>({
     error: true,
     warning: true,
@@ -44,16 +58,29 @@ export function MessagesPanel() {
 
   const counts = useMemo(() => {
     const c: Record<MessageLevel, number> = { error: 0, warning: 0, info: 0 };
+    for (const p of problems) c[p.level]++;
     for (const m of messages) c[m.level]++;
     return c;
-  }, [messages]);
+  }, [problems, messages]);
 
-  const visible = useMemo(() => {
-    const needle = filterOpen ? filter.trim().toLowerCase() : '';
-    return messages.filter(
-      (m) => shown[m.level] && (!needle || `${m.source} ${m.text}`.toLowerCase().includes(needle)),
-    );
-  }, [messages, shown, filter, filterOpen]);
+  const needle = filterOpen ? filter.trim().toLowerCase() : '';
+  const visible = useMemo(
+    () =>
+      messages.filter(
+        (m) =>
+          shown[m.level] && (!needle || `${m.source} ${m.text}`.toLowerCase().includes(needle)),
+      ),
+    [messages, shown, needle],
+  );
+  const visibleProblems = useMemo(
+    () =>
+      problems.filter(
+        (p) =>
+          shown[p.level] &&
+          (!needle || `validator ${problemText(p)}`.toLowerCase().includes(needle)),
+      ),
+    [problems, shown, needle],
+  );
 
   // Auto-scroll to the newest row unless paused.
   useEffect(() => {
@@ -62,7 +89,7 @@ export function MessagesPanel() {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(asText(visible));
+      await navigator.clipboard.writeText(asText(visibleProblems, visible));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1200);
     } catch {
@@ -139,6 +166,36 @@ export function MessagesPanel() {
         <span>Message</span>
       </div>
       <div className="messages-body mono" ref={body}>
+        {visibleProblems.map((p, i) => {
+          const at = p.at;
+          const go = at ? () => openEditor(at.kind, at.id) : undefined;
+          return (
+            <div
+              key={`problem-${i}`}
+              className={`msg-row level-${p.level} problem ${go ? 'clickable' : ''}`}
+              data-testid="problem-row"
+              role={go ? 'button' : undefined}
+              tabIndex={go ? 0 : undefined}
+              title={go ? 'Click to go to the place of this problem' : undefined}
+              onClick={go}
+              onKeyDown={
+                go
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        go();
+                      }
+                    }
+                  : undefined
+              }
+            >
+              <span className="msg-live">live</span>
+              <span className="msg-level">{LEVEL_LABEL[p.level]}</span>
+              <span>Validator</span>
+              <span className="msg-text">{problemText(p)}</span>
+            </div>
+          );
+        })}
         {visible.map((m) => (
           <div key={m.id} className={`msg-row level-${m.level}`}>
             <span>{clock(m.time)}</span>
@@ -147,7 +204,9 @@ export function MessagesPanel() {
             <span className="msg-text">{m.text}</span>
           </div>
         ))}
-        {visible.length === 0 && <div className="panel-empty">No messages</div>}
+        {visible.length === 0 && visibleProblems.length === 0 && (
+          <div className="panel-empty">No messages</div>
+        )}
       </div>
     </section>
   );

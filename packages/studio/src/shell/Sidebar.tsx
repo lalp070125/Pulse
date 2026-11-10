@@ -29,6 +29,15 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useShell, type StudioMode } from '../state/store';
+import { useProject } from '../state/project';
+import {
+  askDelete,
+  askRename,
+  duplicateEntity,
+  newEntity,
+  openEditor,
+  showUsages,
+} from '../state/entities';
 import { sidebarTitle, treeFor, type TreeIcon, type TreeNode } from './treeData';
 
 const ICONS: Record<TreeIcon, LucideIcon> = {
@@ -64,8 +73,6 @@ const MODES: { id: StudioMode; label: string; tip: string }[] = [
   { id: 'test', label: 'Test', tip: 'Run automatic test cases' },
 ];
 
-const CONTEXT_ITEMS = ['New', 'Rename', 'Duplicate', 'Delete', 'Find usages'];
-
 interface ContextMenuState {
   x: number;
   y: number;
@@ -80,19 +87,50 @@ function collectOpen(nodes: TreeNode[], into: Set<string>): Set<string> {
   return into;
 }
 
+interface ContextItem {
+  label: string;
+  action?: () => void;
+}
+
+/** New / Rename / Duplicate / Delete / Find usages (SPEC 6.1). They work on library items and machines. */
+function contextItems(node: TreeNode): ContextItem[] {
+  const e = node.entity;
+  const labels = ['New', 'Rename', 'Duplicate', 'Delete', 'Find usages'];
+  if (!e) return labels.map((label) => ({ label }));
+  const id = e.id;
+  return [
+    { label: 'New', action: () => void newEntity(e.kind) },
+    { label: 'Rename', action: id ? () => void askRename(e.kind, id) : undefined },
+    {
+      label: 'Duplicate',
+      action: id
+        ? () => {
+            const copy = duplicateEntity(e.kind, id);
+            if (copy) openEditor(e.kind, copy);
+          }
+        : undefined,
+    },
+    { label: 'Delete', action: id ? () => void askDelete(e.kind, id) : undefined },
+    { label: 'Find usages', action: id ? () => void showUsages(e.kind, id) : undefined },
+  ];
+}
+
 export function Sidebar() {
   const app = useShell((s) => s.app);
   const mode = useShell((s) => s.mode);
   const selected = useShell((s) => s.selectedTreeId);
   const connection = useShell((s) => s.connection);
   const address = useShell((s) => s.runtimeAddress);
-  const nodes = treeFor(app, mode);
+  const project = useProject((s) => s.project);
+  const nodes = treeFor(app, mode, project);
   const [open, setOpen] = useState<Set<string>>(() => collectOpen(nodes, new Set()));
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
 
   // Each tree starts with its own default groups open.
   useEffect(() => {
-    setOpen((prev) => collectOpen(treeFor(app, mode), new Set(prev)));
+    setOpen((prev) =>
+      collectOpen(treeFor(app, mode, useProject.getState().project), new Set(prev)),
+    );
   }, [app, mode]);
 
   useEffect(() => {
@@ -118,6 +156,10 @@ export function Sidebar() {
     const shell = useShell.getState();
     shell.selectTreeNode(node.id);
     if (node.group) toggle(node.id);
+    if (node.entity) {
+      openEditor(node.entity.kind, node.entity.id);
+      return;
+    }
     // Studio opens a document tab for the node; Panel and Twin have fixed tabs.
     if (app === 'studio' && !node.children) {
       shell.openTab({
@@ -212,8 +254,8 @@ export function Sidebar() {
       </div>
       {app === 'studio' && mode === 'plan' && (
         <div className="sidebar-note">
-          <Activity size={14} strokeWidth={1.5} /> No project is open yet. Projects arrive in Phase
-          1.
+          <Activity size={14} strokeWidth={1.5} />{' '}
+          {project ? `Project: ${project.info.name}` : 'No project is open.'}
         </div>
       )}
       {menu && (
@@ -223,16 +265,20 @@ export function Sidebar() {
           style={{ left: menu.x, top: menu.y }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {CONTEXT_ITEMS.map((label) => (
+          {contextItems(menu.node).map((item) => (
             <button
-              key={label}
+              key={item.label}
               type="button"
               role="menuitem"
               className="menu-item"
-              disabled
-              title="Arrives in Phase 2 (library editors)"
+              disabled={!item.action}
+              title={item.action ? undefined : 'Not available for this item'}
+              onClick={() => {
+                setMenu(null);
+                item.action?.();
+              }}
             >
-              <span className="menu-label">{label}</span>
+              <span className="menu-label">{item.label}</span>
             </button>
           ))}
         </div>

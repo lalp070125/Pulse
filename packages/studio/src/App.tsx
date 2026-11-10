@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { APPS, appTitle } from '@pulso/core';
 import { startConnection } from './lib/connection';
+import { Dialogs } from './ui/Dialogs';
+import { useProject } from './state/project';
 import { AboutDialog } from './shell/AboutDialog';
 import { MenuBar } from './shell/MenuBar';
 import { RuntimeStrip } from './shell/RuntimeStrip';
@@ -15,6 +17,7 @@ export function App() {
 
   // One runtime connection for the whole app.
   useEffect(() => startConnection(), []);
+  useEffect(() => void useProject.getState().load(), []);
 
   // Keep the app in step with the address bar (back / forward buttons).
   useEffect(() => {
@@ -35,7 +38,8 @@ export function App() {
       const shell = useShell.getState();
       const ctrl = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
-      if (ctrl && e.altKey && key === 'b') shell.toggle('inspectorOpen');
+      if (ctrl && !e.altKey && key === 's') void useProject.getState().save();
+      else if (ctrl && e.altKey && key === 'b') shell.toggle('inspectorOpen');
       else if (ctrl && !e.altKey && key === 'b') shell.toggle('sidebarOpen');
       else if (ctrl && key === 'j') shell.toggle('bottomOpen');
       else if (e.altKey && !ctrl && ['1', '2', '3'].includes(key)) {
@@ -56,6 +60,7 @@ export function App() {
       <Workspace />
       <StatusBar />
       <AboutDialog />
+      <Dialogs />
     </div>
   );
 }

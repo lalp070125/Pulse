@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { APPS, PRODUCT_NAME, appTitle } from '@pulso/core';
 import { navigateToApp, useShell } from '../state/store';
+import { useProject } from '../state/project';
+import { askText } from '../state/dialogs';
 
 interface MenuItem {
   label: string;
@@ -27,9 +29,30 @@ function useMenus(): Menu[] {
     {
       label: 'File',
       items: [
-        later('New Project…', 'Ctrl+N', 'Phase 1'),
-        later('Open Project…', 'Ctrl+O', 'Phase 1'),
-        later('Save', 'Ctrl+S', 'Phase 2'),
+        {
+          label: 'New Project…',
+          action: () =>
+            void askText('New project', 'Project folder name', '', (t) =>
+              /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(t)
+                ? null
+                : 'Use letters, digits, - and _ only',
+            ).then((name) => (name ? useProject.getState().newProject(name) : undefined)),
+        },
+        {
+          label: 'Open Project…',
+          action: () =>
+            void fetch('/api/projects')
+              .then((r) => r.json() as Promise<{ projects: string[] }>)
+              .then(({ projects }) =>
+                askText('Open project', `Folder name (${projects.join(', ')})`, projects[0] ?? ''),
+              )
+              .then((name) => (name ? useProject.getState().openProject(name) : undefined)),
+        },
+        {
+          label: 'Save',
+          shortcut: 'Ctrl+S',
+          action: () => void useProject.getState().save(),
+        },
         'separator',
         later('Import Project (zip)…', undefined, 'Phase 10'),
         later('Export Project (zip)…', undefined, 'Phase 10'),
