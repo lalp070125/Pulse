@@ -1,0 +1,145 @@
+/* The Twin scene's own layout. Colours come from tokens.css only. */
+.tw-view {
+  display: flex;
+  flex: 1;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-0);
+}
+.tw-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.tw-stage canvas {
+  display: block;
+  touch-action: none;
+}
+.tw-toolbar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+.tw-toolbar button,
+.tw-buttons button {
+  height: var(--row-h);
+  padding: 0 10px;
+  background: var(--bg-2);
+  color: var(--text-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.tw-toolbar button:hover,
+.tw-buttons button:hover {
+  background: var(--bg-3);
+}
+.tw-toolbar button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.tw-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--text-2);
+}
+.tw-panel {
+  width: 300px;
+  flex: none;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--bg-1);
+  border-left: 1px solid var(--border);
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+}
+.tw-panel h3 {
+  margin: 10px 0 4px;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.tw-panel section:first-child h3 {
+  margin-top: 0;
+}
+.tw-panel select,
+.tw-num {
+  background: var(--bg-2);
+  color: var(--text-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  height: var(--row-h);
+}
+.tw-panel select {
+  width: 100%;
+}
+.tw-num {
+  width: 64px;
+  padding: 0 4px;
+}
+.tw-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--row-h);
+}
+.tw-label {
+  flex: 1;
+  min-width: 0;
+}
+.tw-row code {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.tw-state {
+  width: 24px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.tw-lamp {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--bg-3);
+  border: 1px solid var(--border-strong);
+}
+.tw-lamp.on {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.tw-buttons {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.tw-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.tw-readout b {
+  color: var(--text-1);
+}
+
+.tw-wrap {
+  flex-wrap: wrap;
+}

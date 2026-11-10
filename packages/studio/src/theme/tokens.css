@@ -83,5 +83,20 @@
   /* --- Twin scene (Phase 8) ---------------------------------------------------------
      Reserved for the Twin scene session (docs/parallel-twin-plan.md): it adds its
      colours and sizes between these two lines, and nothing else in this file. */
+  --tw-floor: #6b7385;
+  --tw-belt: #2b3140;
+  --tw-belt-slat: #1e2330;
+  --tw-frame: #8892a8;
+  --tw-fence: #a9b2c6;
+  --tw-box: #c9a36b;
+  --tw-box-sealed: #5fa777;
+  --tw-pusher: #f59e0b;
+  --tw-sealhead: #7c5cff;
+  --tw-gantry: #5e6a86;
+  --tw-beam: #ef4444;
+  --tw-beam-blocked: #22c55e;
+  --tw-lamp-on: #22c55e;
+  --tw-lamp-off: #2e3a33;
+  --tw-sky: #070a12;
   /* --- end of Twin scene --- */
 }
