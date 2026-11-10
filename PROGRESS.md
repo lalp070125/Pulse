@@ -1,5 +1,10 @@
 # Progress
 
+## Notes for later
+
+- Box closing machine design (`docs/box-closing-machine-design.md`): a candidate for rebuilding in the Planner after Phase 3 and for the Phase 8 Twin demo. Review the Twin labels in SPEC 10.1 before Phase 8 and rename any that look copied from other products.
+- 3D reference screenshot for the Phase 8 Twin: `docs/reference/twin-3d-reference.webp`, with its note (look and function only; it is from another product).
+
 ## Phase 3 — Planner canvas
 
 Branch: `phase-3-planner-canvas`
