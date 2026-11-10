@@ -24,13 +24,16 @@ export type DialogRequest =
 
 interface DialogState {
   current: DialogRequest | null;
+  /** Counts dialogs opened, so each one starts fresh (its text field begins with its own initial text). */
+  seq: number;
   show(request: DialogRequest): void;
   close(): void;
 }
 
 export const useDialogs = create<DialogState>((set) => ({
   current: null,
-  show: (current) => set({ current }),
+  seq: 0,
+  show: (current) => set((s) => ({ current, seq: s.seq + 1 })),
   close: () => set({ current: null }),
 }));
 

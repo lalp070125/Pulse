@@ -440,3 +440,31 @@ test('Messages panel: live validator problems with click-to-go', async ({ page }
   await expect(broken).toHaveCount(0);
   await expect(page.getByTestId('messages')).toContainText('Errors: 1');
 });
+
+test('A name dialog holds its own suggested text from the moment it appears', async ({ page }) => {
+  // Regression: the text field used to appear empty (or with the previous dialog's text) and get
+  // its suggestion a moment later, so fast typing could end up as "MachineInfeed".
+  await newProject(page);
+  await openFromTree(page, 'Global Variables');
+  await page.evaluate(() => {
+    const w = window as unknown as { firstValues: string[] };
+    w.firstValues = [];
+    new MutationObserver(() => {
+      const input = document.querySelector<HTMLInputElement>('[data-testid="dialog-input"]');
+      if (input && !input.dataset.seen) {
+        input.dataset.seen = '1';
+        w.firstValues.push(input.value);
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+  await page.getByTestId('editor-new').click();
+  await page.getByTestId('dialog-input').fill('Alpha');
+  await page.keyboard.press('Escape');
+  await page.getByTestId('editor-new').click();
+  await expect(page.getByTestId('dialog-input')).toHaveValue('NewGlobal');
+  await page.keyboard.press('Escape');
+  const first = await page.evaluate(
+    () => (window as unknown as { firstValues: string[] }).firstValues,
+  );
+  expect(first).toEqual(['NewGlobal', 'NewGlobal']);
+});

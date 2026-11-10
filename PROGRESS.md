@@ -25,9 +25,9 @@ Branch: `phase-3-planner-canvas`
 - H / V / Exp junctions are drawing only (they never change machine.json) and are not part of the acceptance test.
 - Double-click on the canvas does not zoom: double-click edits badges and labels (SPEC 6.3).
 
-### Watch item (from Phase 2)
+### Browser-test timeouts: cause found and fixed
 
-Intermittent browser-test timeouts where unsaved work disappears mid-test, as if the page reloaded. Seen again once during Phase 3 work (two tests in one run), not reproduced since. The test server's output and the browser's live-reload messages are now printed in the test output (`[WebServer]` and `[browser …] [vite]` lines), so the next occurrence will show whether a reload caused it. Cause still not proven.
+The intermittent timeouts first seen in Phase 2 were **a real bug in the name dialog**, not machine load and not a page reload. When a name dialog opened, its text field first showed an empty or stale value (the previous dialog's text) and only got its suggested name a moment later. Typing that landed in that gap mixed with the suggestion: a run on 2026-11-10 created a machine called "MachineInfeed" instead of "Infeed", and the test then waited for "Infeed" until it timed out. The new live-reload logging showed no reload during that test, which pointed to the app itself. Fix: each dialog now starts with its own text from its first frame (`ui/Dialogs.tsx`). A regression test (`e2e/library.spec.ts`, "A name dialog holds its own suggested text…") checks the field's value at the moment the dialog appears. It fails on the old code (it saw the previous project name, then "Alpha") and passes on the new code.
 
 ## Phase 2 — Library editors and composer
 

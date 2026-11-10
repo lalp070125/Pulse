@@ -1,17 +1,18 @@
-import { useEffect, useState } from 'react';
-import { useDialogs } from '../state/dialogs';
+import { useState } from 'react';
+import { useDialogs, type DialogRequest } from '../state/dialogs';
 
 /** Renders the one open dialog (text prompt, confirmation or information). */
 export function Dialogs() {
   const current = useDialogs((s) => s.current);
+  const seq = useDialogs((s) => s.seq);
+  // A fresh component per dialog: the text field holds this dialog's initial text from its
+  // very first frame, so nothing typed early can mix with a late or stale value.
+  return current ? <DialogView key={seq} current={current} /> : null;
+}
+
+function DialogView({ current }: { current: DialogRequest }) {
   const close = useDialogs((s) => s.close);
-  const [text, setText] = useState('');
-
-  useEffect(() => {
-    if (current?.kind === 'text') setText(current.initial);
-  }, [current]);
-
-  if (!current) return null;
+  const [text, setText] = useState(() => (current.kind === 'text' ? current.initial : ''));
 
   const finish = (ok: boolean) => {
     if (current.kind === 'text') current.resolve(ok ? text : null);
