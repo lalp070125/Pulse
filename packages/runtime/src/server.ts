@@ -13,6 +13,8 @@ import {
   type Project,
   type ServerMessage,
 } from '@pulso/core';
+import { LiveRuntime, type LiveClock } from './live';
+import { SessionWriter, listSessions, sessionPath } from './sessions';
 import { loadProject, saveProject } from './store';
 import { newId } from './ulid';
 
@@ -34,10 +36,16 @@ export interface PulsoServerOptions {
   projectsDir?: string;
   /** Project folder to open first. Defaults to box-sealer-demo when it exists. */
   project?: string;
+  /** Where session files (.jsonl) are written. Defaults to `<projectsDir>/.sessions`. */
+  sessionsDir?: string;
+  /** Clock for the live runtime (tests use a manual one). */
+  clock?: LiveClock;
 }
 
 export interface PulsoServer {
   app: Express;
+  /** The live runtime (Deploy / Start / Stop / Step / Force). */
+  live: LiveRuntime;
   http: Server;
   port: number;
   close(): Promise<void>;
@@ -58,6 +66,9 @@ export async function startServer(options: PulsoServerOptions = {}): Promise<Pul
   let currentName: string | null = null;
   let current: Project | null = null;
   const folderOf = (name: string) => path.join(projectsDir, name);
+  const sessionsDir = options.sessionsDir ?? path.join(projectsDir, '.sessions');
+  const sessions = new SessionWriter({ dir: sessionsDir });
+  const live = new LiveRuntime({ clock: options.clock, onEvent: (e) => sessions.write(e) });
   const validFolder = (name: unknown): name is string =>
     typeof name === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(name);
 
@@ -150,6 +161,16 @@ export async function startServer(options: PulsoServerOptions = {}): Promise<Pul
     res.json({ ok: true, name });
   });
 
+  // Session files (SPEC 5.11): list them, and fetch one to load it back.
+  api.get('/sessions', (_req, res) => {
+    res.json({ ok: true, current: live.session, sessions: listSessions(sessionsDir) });
+  });
+  api.get('/sessions/:name', (req, res) => {
+    const p = sessionPath(sessionsDir, req.params.name);
+    if (!p) return void res.status(404).json({ ok: false, error: 'No such session file' });
+    res.type('application/x-ndjson').sendFile(p);
+  });
+
   api.use((_req, res) => {
     res.status(404).json({ ok: false, error: 'Unknown API route' });
   });
@@ -179,14 +200,53 @@ export async function startServer(options: PulsoServerOptions = {}): Promise<Pul
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   });
   wss.on('connection', (ws) => {
-    const send = (msg: ServerMessage) => ws.send(JSON.stringify(msg));
+    const send = (msg: ServerMessage) => {
+      if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg));
+    };
     send({ type: 'hello', product: PRODUCT_NAME, version: VERSION });
+    const unsubscribe = live.subscribe(send);
+    ws.on('close', unsubscribe);
     ws.on('message', (raw) => {
+      let msg: ClientMessage;
       try {
-        const msg = JSON.parse(String(raw)) as ClientMessage;
-        if (msg.type === 'ping') send({ type: 'pong' });
+        msg = JSON.parse(String(raw)) as ClientMessage;
       } catch {
-        // Ignore anything that is not valid JSON.
+        return; // Ignore anything that is not valid JSON.
+      }
+      const fail = (message: string) => send({ type: 'error', message });
+      switch (msg.type) {
+        case 'ping':
+          return send({ type: 'pong' });
+        case 'deploy': {
+          if (!current || !currentName) return fail('No project is open');
+          const r = live.deploy(current, currentName);
+          if (r.ok) {
+            const name = currentName;
+            sessions.begin(name, new Date().toISOString(), () => {
+              const snap = live.snapshot();
+              return { vars: snap.vars, values: snap.values, tick: snap.tick, timeUs: snap.timeUs };
+            });
+            live.session = sessions.name;
+            live.flush();
+            send(live.snapshot());
+          }
+          return;
+        }
+        case 'start':
+          if (!live.start()) fail(live.current ? 'Already running' : 'Deploy first');
+          return;
+        case 'stop':
+          live.stop();
+          return;
+        case 'step':
+          if (!live.step(Number(msg.n) || 1))
+            fail(live.current ? 'Stop before stepping' : 'Deploy first');
+          return;
+        case 'force': {
+          const r = live.force(msg.path, msg.value);
+          if (!r.ok) fail(r.message);
+          return;
+        }
       }
     });
   });
@@ -229,7 +289,10 @@ export async function startServer(options: PulsoServerOptions = {}): Promise<Pul
     app,
     http,
     port: boundPort(),
+    live,
     async close() {
+      live.close();
+      sessions.end();
       for (const client of wss.clients) client.terminate();
       wss.close();
       await closeVite?.();
